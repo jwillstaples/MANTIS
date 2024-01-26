@@ -24,7 +24,25 @@ class BoardC4():
                     legal_placements.append((col, row))
 
         return [self.make_move(move) for move in legal_placements]
+    
+    def open_cols(self) -> List: 
+        """ Returns columns with an open space"""
 
+        open_cols = []
+        for i, col in enumerate(self.board_matrix): 
+            if np.sum(np.abs(col)) < 7: 
+                open_cols.append(i)
+
+        return open_cols
+    
+    def bottom_available(self, col: int): 
+        """ returns bottom available slot in a given column """
+
+        for i, val in enumerate(self.board_matrix[col]): 
+            if val == 0: 
+                return i
+            
+        raise ValueError(f"No open spaces in column {col}")
 
     def terminal_eval(self) -> int:
         
