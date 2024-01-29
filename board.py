@@ -8,7 +8,7 @@ class BlankBoard:
         pass
 
     @abc.abstractmethod
-    def get_legal_moves(self) -> List['BlankBoard']:
+    def get_legal_moves(self) -> List["BlankBoard"]:
         """Returns board instances representing each legal move"""
         return []
 
