@@ -19,11 +19,10 @@ class BoardC4(BlankBoard):
         """return List of boards representing legal moves"""
 
         legal_placements = []
-        for col in range(7): 
+        for col in range(7):
             row = self.bottom_available(col)
-            if row != 7: 
+            if row != 7:
                 legal_placements.append(self.make_move((col, row)))
-
 
         return legal_placements
 
