@@ -19,12 +19,13 @@ class BoardC4(BlankBoard):
         """return List of boards representing legal moves"""
 
         legal_placements = []
-        for (col, row), val in np.ndenumerate(self.board_matrix):
-            if val == 0:
-                if self.board_matrix[col][row - 1] != 0 or row == 0:
-                    legal_placements.append((col, row))
+        for col in range(7): 
+            row = self.bottom_available(col)
+            if row != 7: 
+                legal_placements.append(self.make_move((col, row)))
 
-        return [self.make_move(move) for move in legal_placements]
+
+        return legal_placements
 
     def open_cols(self) -> List:
         """Returns columns with an open space"""
@@ -43,7 +44,7 @@ class BoardC4(BlankBoard):
             if val == 0:
                 return i
 
-        raise ValueError(f"No open spaces in column {col}")
+        return 7
 
     def terminal_eval(self) -> int:
         horizontal_kernel = np.array([[1, 1, 1, 1]])
@@ -77,4 +78,4 @@ class BoardC4(BlankBoard):
 
     @classmethod
     def from_start(cls):
-        return cls(np.zeros((6, 7), dtype=int), True)
+        return cls(np.zeros((7, 6), dtype=int), True)
