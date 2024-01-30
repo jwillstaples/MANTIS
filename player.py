@@ -5,9 +5,6 @@ from board import BlankBoard
 
 class BlankPlayer:
 
-    def __init__(self):
-        pass
-
     @abc.abstractmethod
     def move(self, board: BlankBoard) -> BlankBoard:
         """

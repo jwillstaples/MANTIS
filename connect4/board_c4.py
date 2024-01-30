@@ -26,7 +26,7 @@ class BoardC4(BlankBoard):
 
         return legal_placements
 
-    def open_cols(self) -> List:
+    def open_cols(self) -> List[int]:
         """Returns columns with an open space"""
 
         open_cols = []
@@ -36,7 +36,7 @@ class BoardC4(BlankBoard):
 
         return open_cols
 
-    def bottom_available(self, col: int):
+    def bottom_available(self, col: int) -> int:
         """returns bottom available slot in a given column"""
 
         for i, val in enumerate(self.board_matrix[col]):
@@ -46,6 +46,7 @@ class BoardC4(BlankBoard):
         return 7
 
     def terminal_eval(self) -> int:
+
         horizontal_kernel = np.array([[1, 1, 1, 1]])
         vertical_kernel = np.transpose(horizontal_kernel)
         diag1_kernel = np.eye(4, dtype=np.uint8)

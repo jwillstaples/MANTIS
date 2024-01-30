@@ -10,7 +10,7 @@ class BlankBoard:
     @abc.abstractmethod
     def get_legal_moves(self) -> List["BlankBoard"]:
         """Returns board instances representing each legal move"""
-        return []
+        pass
 
     @abc.abstractmethod
     def terminal_eval(self) -> int:
@@ -21,4 +21,4 @@ class BlankBoard:
         1 : player one wins
         2 : unterminated
         """
-        return 0
+        pass
