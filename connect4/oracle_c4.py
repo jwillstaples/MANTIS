@@ -4,7 +4,7 @@ from board_c4 import BoardC4
 from typing import Tuple
 
 
-class OracleC4:
+class OracleC4(BlankPlayer):
 
     def __init__(self, depth: int):
 
