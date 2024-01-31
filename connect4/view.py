@@ -17,11 +17,9 @@ class MyGame(arcade.Window):
     def __init__(self, width, height, title):
         super().__init__(width, height, title)
         arcade.set_background_color(arcade.color.WHITE)
-        
-
 
     def setup(self):
-        """ Set up the game variables. Call to re-start the game. """
+        """Set up the game variables. Call to re-start the game."""
         # Create your sprites and sprite lists here
         pass
 
@@ -79,7 +77,7 @@ class MyGame(arcade.Window):
 
 
 def main():
-    """ Main function """
+    """Main function"""
     game = MyGame(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     game.setup()
     arcade.run()

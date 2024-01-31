@@ -2,6 +2,8 @@ import numpy as np
 from board_c4 import BoardC4
 import random
 from player_c4 import PlayerC4
+from oracle_c4 import OracleC4
+import time
 
 
 def print_board(board: BoardC4) -> None:
@@ -16,6 +18,8 @@ def print_board(board: BoardC4) -> None:
                 print(" ", end="")
             print("|", end="")
         print("")
+    for i in range(7): 
+        print(f" {i}", end="")
     print("\n")
 
 
@@ -38,7 +42,8 @@ if __name__ == "__main__":
     game_board = BoardC4.from_start()
     result = 2
 
-    bot = PlayerC4()
+    # bot = PlayerC4()
+    bot = OracleC4(depth=4)
 
     print_board(game_board)
 

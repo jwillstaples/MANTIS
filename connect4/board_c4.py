@@ -15,7 +15,7 @@ class BoardC4(BlankBoard):
         self.board_matrix = board_matrix
         self.red_move = red_move
 
-    def get_legal_moves(self) -> List:
+    def get_legal_moves(self) -> List["BoardC4"]:
         """return List of boards representing legal moves"""
 
         legal_placements = []
