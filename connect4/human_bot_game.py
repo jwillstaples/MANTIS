@@ -18,7 +18,7 @@ def print_board(board: BoardC4) -> None:
                 print(" ", end="")
             print("|", end="")
         print("")
-    for i in range(7): 
+    for i in range(7):
         print(f" {i}", end="")
     print("\n")
 
