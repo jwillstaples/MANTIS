@@ -25,9 +25,9 @@ class BoardC4(BlankBoard):
                 legal_placements.append(self.make_move((col, row)))
 
         return legal_placements
-    
-    def legal_moves(self) -> np.ndarray: 
-        """ boolean array of which moves are legal """
+
+    def legal_moves(self) -> np.ndarray:
+        """boolean array of which moves are legal"""
         return np.sum(np.abs(self.board_matrix), axis=1) == 7
 
     def open_cols(self) -> List[int]:
@@ -79,9 +79,9 @@ class BoardC4(BlankBoard):
         new_board[move[0]][move[1]] = 1 if self.red_move else -1
 
         return BoardC4(new_board, not self.red_move)
-    
-    def move_from_int(self, col: int) -> "BoardC4": 
-        
+
+    def move_from_int(self, col: int) -> "BoardC4":
+
         # assert col in self.open_cols()
         assert self.legal_moves()[col]
         move = (col, self.bottom_available(col))

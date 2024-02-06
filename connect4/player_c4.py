@@ -3,20 +3,19 @@ import numpy as np
 from common.player import BlankPlayer
 from connect4.board_c4 import BoardC4
 
+from mcts import mcts
+from c4net import C4Net
+
 import random
 
 
 class PlayerC4:
 
-    def __init__(self):
-        pass
+    def __init__(self, nnet: C4Net):
+        self.nnet = nnet
 
     def move(self, board: BoardC4) -> BoardC4:
 
-        possible_moves = board.get_legal_moves()
+        new_board = mcts(board, self.nnet)
 
-        return random.choice(possible_moves)
-    
-    def mcts(board: BoardC4, runs: int): 
-        pass 
-
+        return new_board

@@ -36,4 +36,3 @@ def take_human(board: BoardC4) -> BoardC4:
     new_board = board.make_move(move)
 
     return new_board
-

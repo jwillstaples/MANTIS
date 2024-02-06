@@ -1,42 +1,52 @@
-import numpy as np 
+import numpy as np
 from common.board import BlankBoard
+import torch
 from c4net import C4Net
 from typing import List
 
-class Node: 
 
-    def __init__(self, parent: "Node"=None, p: np.float64 = None, child_index: int = None): 
+class Node:
+
+    def __init__(
+        self, parent: "Node" = None, p: np.float64 = None, child_index: int = None
+    ):
         self.parent = parent
         self.children = None
         self.board = None
         self.child_index = child_index
         self.n = 0
-        self.w = 0 
+        self.w = 0
         self.p = p
-    
-    def make_children(self, p_vec: np.ndarray): 
+
+    def make_children(self, p_vec: np.ndarray):
         self.children = np.empty(p_vec.shape, dtype=Node)
-        for i, p in enumerate(p_vec): 
+        for i, p in enumerate(p_vec):
             self.children[i] = Node(self, p, i)
 
-    def back_propagate(self, eval): 
-        
-        self.n += 1 
+    def value_score(self):
+        if self.n > 0:
+            return self.w / self.n
+        else:
+            return 0
+
+    def back_propagate(self, eval):
+
+        self.n += 1
         self.w += eval
 
-        if not (self.parent is None): 
+        if not (self.parent is None):
             self.parent.back_propagate(eval)
 
 
-def mcts(head_board: BlankBoard, runs: int = 1000) -> BlankBoard: 
+def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> BlankBoard:
 
-    nnet = C4Net()
     p_vec, eval = nnet.forward(head_board)
 
     head = Node()
+    head.board = head_board
     head.make_children(p_vec)
-    
-    for i in range(runs): 
+
+    for i in range(runs):
 
         sim_node = select(head)
         sim_board = get_board(sim_node)
@@ -45,42 +55,39 @@ def mcts(head_board: BlankBoard, runs: int = 1000) -> BlankBoard:
         p_vec_legalized = int(sim_board.legal_moves()) * p_vec
         sim_node.make_children(p_vec_legalized)
 
-    final_eval = [(child.w/child.n, child) for child in head.children]
+    final_eval = [(child.w / child.n, child) for child in head.children]
     final_eval.sort()
     favorite_child = final_eval[0][1]
 
     return get_board(favorite_child)
 
-def select(tree: Node) -> Node: 
 
-    def _minimax(tree: Node) -> (np.float64, Node): 
-    
-        if tree.children is None: 
-            return (tree, _ubc(tree))
-        else: 
-            max_ubc = -np.inf
-            favorite_child = None
-            for child in tree.children: 
-                child_ubc, _ = _minimax(child)
-                if child_ubc > max_ubc: 
-                    max_ubc = child_ubc
-                    favorite_child = child
-        
-        return (max_ubc, favorite_child)
+def select(tree: Node) -> Node:
 
-    def _ubc(leaf: Node) -> np.float64: 
-        return 0     
-    
-    _, sim_node = _minimax(tree)
+    def _ucb(tree: Node) -> np.float64:
+        # cbase = 19562
+        # cinit = 1.25
 
-    return sim_node
+        # this is classic ucb, I think alphazero implements a slightly altered version
 
-def get_board(node: Node) -> BlankBoard: 
+        return tree.prior * np.sqrt(tree.parent.n) / (tree.n + 1) - tree.value_score()
 
-    if node.board is None: 
+    if tree.children is None:
+        return tree
+    else:
+        max_ucb = -np.inf
+        for child in tree.children:
+            current_ucb = _ucb(child)
+            if current_ucb > max_ucb:
+                max_ucb = current_ucb
+                favorite_child = child
+
+    return select(favorite_child)
+
+
+def get_board(node: Node) -> BlankBoard:
+
+    if node.board is None:
         node.board = node.parent.board.move_from_int(node.child_index)
-    
-    return node.board
-    
-    
 
+    return node.board
