@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.init as init
 
 # Define the critic (discriminator) and generator networks
 class Critic(nn.Module):
