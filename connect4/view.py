@@ -38,7 +38,7 @@ class C4Game(arcade.Window):
         arcade.draw_line(1 * SCREEN_WIDTH / 9, BORDER, 8 * SCREEN_WIDTH / 9, BORDER, arcade.color.BLACK,2)
         arcade.draw_line(1 * SCREEN_WIDTH / 9, SCREEN_HEIGHT-BORDER, 8 * SCREEN_WIDTH / 9, SCREEN_HEIGHT-BORDER, arcade.color.BLACK,2)
             
-        if self.board.red_move:
+        if self.board.red_move and self.result == 2:
             self.board = self.bot.move(self.board)
             self.update_board(self.board)
         elif self.selected != -1 and self.board.bottom_available(self.selected) != 7:
