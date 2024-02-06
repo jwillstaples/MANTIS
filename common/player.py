@@ -1,6 +1,6 @@
 import numpy as np
 import abc
-from board import BlankBoard
+from common.board import BlankBoard
 
 
 class BlankPlayer:

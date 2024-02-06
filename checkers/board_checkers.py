@@ -1,5 +1,5 @@
 import numpy as np
-from board import BlankBoard
+from common.board import BlankBoard
 
 
 class BoardCheckers(BlankBoard):

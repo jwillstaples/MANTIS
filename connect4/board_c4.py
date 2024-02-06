@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import numpy as np
 
-from board import BlankBoard
+from common.board import BlankBoard
 from scipy.signal import convolve2d
 
 

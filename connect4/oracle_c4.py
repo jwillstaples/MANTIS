@@ -1,6 +1,6 @@
 import numpy as np
-from player import BlankPlayer
-from board_c4 import BoardC4
+from common.player import BlankPlayer
+from connect4.board_c4 import BoardC4
 from typing import Tuple
 
 
