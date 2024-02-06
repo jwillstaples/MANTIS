@@ -22,3 +22,11 @@ class BlankBoard:
         2 : unterminated
         """
         pass
+
+    @abc.abstractmethod
+    def move_from_int(self, num: int) -> "BlankBoard": 
+        """
+        Returns a board instance based on the integer position 
+        of the move in the p-vector
+        """
+        pass

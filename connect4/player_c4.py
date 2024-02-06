@@ -16,3 +16,7 @@ class PlayerC4:
         possible_moves = board.get_legal_moves()
 
         return random.choice(possible_moves)
+    
+    def mcts(board: BoardC4, runs: int): 
+        pass 
+
