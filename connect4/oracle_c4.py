@@ -77,9 +77,10 @@ class TestNet:
         ]
 
         eval = 0.0
+        canonical_correction = 1 if board.red_move else -1
 
         for kernel in detection_kernels:
-            convolution = convolve2d(board.board_matrix, kernel, mode="valid")
+            convolution = convolve2d(board.board_matrix * canonical_correction, kernel, mode="valid")
             if (convolution == 4).any():
                 return (p_vec_test, 1)
             if (convolution == -4).any():
@@ -93,6 +94,6 @@ class TestNet:
                 - np.sum(convolution == -2)
             )
 
-        eval += np.sum(board.board_matrix[3]) * 0.1
+        eval += np.sum(board.board_matrix[3] * canonical_correction) * 0.1
 
         return (p_vec_test, eval)

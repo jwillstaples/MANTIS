@@ -38,7 +38,7 @@ class Node:
         self.w += eval
 
         if not (self.parent is None):
-            self.parent.back_propagate(eval)
+            self.parent.back_propagate(-1 * eval)
 
 
 def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> BlankBoard:
@@ -57,18 +57,18 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> Bla
 
         p_vec, eval = nnet.forward(sim_board)
         sim_node.back_propagate(np.float64(eval))
-        p_vec_legalized = sim_board.legal_moves() * np.array(p_vec)
+        # p_vec_legalized = sim_board.legal_moves() * np.array(p_vec)
         sim_node.make_children(sim_board.legal_moves() * np.array(p_vec))
 
     print_tree(head)
 
-    max_value = -np.inf
+    min_value = np.inf
     for child in head.children:
-        if child.value_score() > max_value:
-            max_value = child.value_score()
+        if child.value_score() < min_value:
+            min_value = child.value_score()
             favorite_child = child
 
-    print(max_value)
+    print(min_value)
 
     return get_board(favorite_child)
 
@@ -114,7 +114,7 @@ def print_tree(tree: Node, depth: int = 0):
     for i in range(depth):
         print("   ", end="")
 
-    print(f"Move {tree.child_index} -- vists: {tree.n}, wins: {tree.w}")
+    print(f"Move {tree.child_index} -- vists: {tree.n}, value score: {np.round(tree.value_score(), 4)}")
 
     if tree.children is None:
         return
