@@ -4,6 +4,8 @@ import random
 from connect4.player_c4 import PlayerC4
 from connect4.oracle_c4 import OracleC4
 from connect4.human_bot_game import print_board, take_human
+from connect4.c4net import C4Net
+from connect4.oracle_c4 import TestNet
 import time
 
 
@@ -11,8 +13,10 @@ if __name__ == "__main__":
     game_board = BoardC4.from_start()
     result = 2
 
-    # bot = PlayerC4()
-    bot = OracleC4(depth=4)
+    nnet = TestNet()
+
+    bot = PlayerC4(nnet)
+    # bot = OracleC4(depth=4)
 
     print_board(game_board)
 

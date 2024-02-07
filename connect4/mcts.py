@@ -1,8 +1,11 @@
 import numpy as np
 from common.board import BlankBoard
 import torch
-from c4net import C4Net
+from connect4.c4net import C4Net
 from typing import List
+from tqdm import tqdm
+
+from connect4.oracle_c4 import TestNet
 
 
 class Node:
@@ -18,10 +21,10 @@ class Node:
         self.w = 0
         self.p = p
 
-    def make_children(self, p_vec: np.ndarray):
-        self.children = np.empty(p_vec.shape, dtype=Node)
-        for i, p in enumerate(p_vec):
-            self.children[i] = Node(self, p, i)
+    def make_children(self, ps: np.ndarray):
+        self.children = np.empty(ps.shape, dtype=Node)
+        for i, pc in enumerate(ps):
+            self.children[i] = Node(self, pc, i)
 
     def value_score(self):
         if self.n > 0:
@@ -44,20 +47,28 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> Bla
 
     head = Node()
     head.board = head_board
-    head.make_children(p_vec)
+    head.make_children(head_board.legal_moves() * np.array(p_vec))
+    head.n = 1
 
-    for i in range(runs):
+    for i in tqdm(range(runs)):
 
         sim_node = select(head)
         sim_board = get_board(sim_node)
-        p_vec, eval = nnet.forward(sim_board)
-        sim_node.back_propagate(eval)
-        p_vec_legalized = int(sim_board.legal_moves()) * p_vec
-        sim_node.make_children(p_vec_legalized)
 
-    final_eval = [(child.w / child.n, child) for child in head.children]
-    final_eval.sort()
-    favorite_child = final_eval[0][1]
+        p_vec, eval = nnet.forward(sim_board)
+        sim_node.back_propagate(np.float64(eval))
+        p_vec_legalized = sim_board.legal_moves() * np.array(p_vec)
+        sim_node.make_children(sim_board.legal_moves() * np.array(p_vec))
+
+    print_tree(head)
+
+    max_value = -np.inf
+    for child in head.children:
+        if child.value_score() > max_value:
+            max_value = child.value_score()
+            favorite_child = child
+
+    print(max_value)
 
     return get_board(favorite_child)
 
@@ -70,17 +81,22 @@ def select(tree: Node) -> Node:
 
         # this is classic ucb, I think alphazero implements a slightly altered version
 
-        return tree.prior * np.sqrt(tree.parent.n) / (tree.n + 1) - tree.value_score()
+        return tree.p * np.sqrt(tree.parent.n) / (tree.n + 1) - tree.value_score()
 
     if tree.children is None:
         return tree
-    else:
-        max_ucb = -np.inf
-        for child in tree.children:
-            current_ucb = _ucb(child)
-            if current_ucb > max_ucb:
-                max_ucb = current_ucb
-                favorite_child = child
+
+    max_ucb = -np.inf
+    favorite_child = tree.children[0]
+    for child in tree.children:
+        current_ucb = _ucb(child)
+        if current_ucb > max_ucb and child.p > 1e-8:
+            max_ucb = current_ucb
+            favorite_child = child
+
+    if max_ucb == -np.inf:
+        tree.p = 0
+        return tree
 
     return select(favorite_child)
 
@@ -91,3 +107,19 @@ def get_board(node: Node) -> BlankBoard:
         node.board = node.parent.board.move_from_int(node.child_index)
 
     return node.board
+
+
+def print_tree(tree: Node, depth: int = 0):
+
+    for i in range(depth):
+        print("   ", end="")
+
+    print(f"Move {tree.child_index} -- vists: {tree.n}, wins: {tree.w}")
+
+    if tree.children is None:
+        return
+    elif depth > 1:
+        return
+
+    for child in tree.children:
+        print_tree(child, depth=depth + 1)

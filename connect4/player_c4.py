@@ -3,8 +3,8 @@ import numpy as np
 from common.player import BlankPlayer
 from connect4.board_c4 import BoardC4
 
-from mcts import mcts
-from c4net import C4Net
+from connect4.mcts import mcts
+from connect4.c4net import C4Net
 
 import random
 

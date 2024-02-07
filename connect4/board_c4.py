@@ -28,7 +28,7 @@ class BoardC4(BlankBoard):
 
     def legal_moves(self) -> np.ndarray:
         """boolean array of which moves are legal"""
-        return np.sum(np.abs(self.board_matrix), axis=1) == 7
+        return np.sum(np.abs(self.board_matrix), axis=1) < 5.5
 
     def open_cols(self) -> List[int]:
         """Returns columns with an open space"""
@@ -90,3 +90,20 @@ class BoardC4(BlankBoard):
     @classmethod
     def from_start(cls):
         return cls(np.zeros((7, 6), dtype=int), True)
+
+
+def print_board(board: BoardC4) -> None:
+    for row in board.board_matrix.T[::-1]:
+        print("|", end="")
+        for val in row:
+            if val == 1:
+                print("x", end="")
+            elif val == -1:
+                print("o", end="")
+            else:
+                print(" ", end="")
+            print("|", end="")
+        print("")
+    for i in range(7):
+        print(f" {i}", end="")
+    print("\n")
