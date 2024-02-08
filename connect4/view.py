@@ -1,7 +1,8 @@
 import arcade
 
 from connect4.board_c4 import BoardC4
-from connect4.oracle_c4 import OracleC4
+from connect4.oracle_c4 import OracleC4, TestNet
+from connect4.player_c4 import PlayerC4
 
 # from connect4.player_c4 import PlayerC4
 
@@ -26,8 +27,9 @@ class C4Game(arcade.Window):
     def setup(self):
         self.board = BoardC4.from_start()
         self.result = 2
-        self.bot = OracleC4(depth=4)
-        # self.bot = PlayerC4()
+        # self.bot = OracleC4(depth=4)
+        nnet = TestNet() 
+        self.bot = PlayerC4(nnet)
 
     def on_draw(self):
         self.clear()
