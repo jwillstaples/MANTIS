@@ -94,6 +94,7 @@ def select(tree: Node) -> Node:
 
     if max_ucb == -np.inf:
         tree.p = 0
+        tree.w = 0
         return tree
 
     return select(favorite_child)
