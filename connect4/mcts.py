@@ -53,9 +53,9 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> Bla
     for i in tqdm(range(runs)):
 
         sim_node = select(head)
-        if np.isclose(sim_node.value_score(), 1.0): 
+        if np.isclose(sim_node.value_score(), 1.0):
             sim_node.back_propagate(1.0)
-        else: 
+        else:
             sim_board = get_board(sim_node)
 
             p_vec, eval = nnet.forward(sim_board)
@@ -117,7 +117,9 @@ def print_tree(tree: Node, depth: int = 0):
     for i in range(depth):
         print("   ", end="")
 
-    print(f"Move {tree.child_index} -- vists: {tree.n}, value score: {np.round(tree.value_score(), 4)}")
+    print(
+        f"Move {tree.child_index} -- vists: {tree.n}, value score: {np.round(tree.value_score(), 4)}"
+    )
 
     if tree.children is None:
         return

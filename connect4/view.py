@@ -30,7 +30,7 @@ class C4Game(arcade.Window):
         self.board = BoardC4.from_start()
         self.result = 2
         # self.bot = OracleC4(depth=4)
-        nnet = TestNet() 
+        nnet = TestNet()
         self.bot = PlayerC4(nnet)
 
     def on_draw(self):

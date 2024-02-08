@@ -80,7 +80,9 @@ class TestNet:
         canonical_correction = 1 if board.red_move else -1
 
         for kernel in detection_kernels:
-            convolution = convolve2d(board.board_matrix * canonical_correction, kernel, mode="valid")
+            convolution = convolve2d(
+                board.board_matrix * canonical_correction, kernel, mode="valid"
+            )
             if (convolution == 4).any():
                 return (p_vec_test, 1)
             if (convolution == -4).any():
