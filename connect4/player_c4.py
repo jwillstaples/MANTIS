@@ -10,12 +10,10 @@ import random
 
 
 class PlayerC4:
-
     def __init__(self, nnet: C4Net):
         self.nnet = nnet
 
     def move(self, board: BoardC4) -> BoardC4:
-
         new_board = mcts(board, self.nnet)
 
         return new_board

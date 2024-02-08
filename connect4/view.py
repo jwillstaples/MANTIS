@@ -19,7 +19,6 @@ class C4Piece:
 
 
 class C4Game(arcade.Window):
-
     def __init__(self, width, height):
         super().__init__(width, height, "Connect 4")
         arcade.set_background_color(arcade.color.WHITE)

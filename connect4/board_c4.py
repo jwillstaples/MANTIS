@@ -50,7 +50,6 @@ class BoardC4(BlankBoard):
         return 7
 
     def terminal_eval(self) -> int:
-
         horizontal_kernel = np.array([[1, 1, 1, 1]])
         vertical_kernel = np.transpose(horizontal_kernel)
         diag1_kernel = np.eye(4, dtype=np.uint8)
@@ -81,7 +80,6 @@ class BoardC4(BlankBoard):
         return BoardC4(new_board, not self.red_move)
 
     def move_from_int(self, col: int) -> "BoardC4":
-
         # assert col in self.open_cols()
         assert self.legal_moves()[col]
         move = (col, self.bottom_available(col))

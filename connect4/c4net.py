@@ -4,7 +4,6 @@ import torch.nn as nn
 
 
 class C4Net(nn.Module):
-
     def __init__(self):
         super(C4Net, self).__init__()
         # Define Model Layers Here
