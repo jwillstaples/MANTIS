@@ -9,7 +9,6 @@ from connect4.oracle_c4 import TestNet
 
 
 class Node:
-
     def __init__(
         self, parent: "Node" = None, p: np.float64 = None, child_index: int = None
     ):
@@ -33,7 +32,6 @@ class Node:
             return 0
 
     def back_propagate(self, eval):
-
         self.n += 1
         self.w += eval
 
@@ -42,7 +40,6 @@ class Node:
 
 
 def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> BlankBoard:
-
     p_vec, eval = nnet.forward(head_board)
 
     head = Node()
@@ -51,7 +48,6 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> Bla
     head.n = 1
 
     for i in tqdm(range(runs)):
-
         sim_node = select(head)
         sim_board = get_board(sim_node)
 
@@ -74,7 +70,6 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> Bla
 
 
 def select(tree: Node) -> Node:
-
     def _ucb(tree: Node) -> np.float64:
         # cbase = 19562
         # cinit = 1.25
@@ -102,7 +97,6 @@ def select(tree: Node) -> Node:
 
 
 def get_board(node: Node) -> BlankBoard:
-
     if node.board is None:
         node.board = node.parent.board.move_from_int(node.child_index)
 
@@ -110,11 +104,12 @@ def get_board(node: Node) -> BlankBoard:
 
 
 def print_tree(tree: Node, depth: int = 0):
-
     for i in range(depth):
         print("   ", end="")
 
-    print(f"Move {tree.child_index} -- vists: {tree.n}, value score: {np.round(tree.value_score(), 4)}")
+    print(
+        f"Move {tree.child_index} -- vists: {tree.n}, value score: {np.round(tree.value_score(), 4)}"
+    )
 
     if tree.children is None:
         return

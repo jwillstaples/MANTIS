@@ -4,7 +4,6 @@ from common.board import BlankBoard
 
 
 class BlankPlayer:
-
     @abc.abstractmethod
     def move(self, board: BlankBoard) -> BlankBoard:
         """

@@ -7,15 +7,11 @@ from scipy.signal import convolve2d
 
 
 class OracleC4(BlankPlayer):
-
     def __init__(self, depth: int):
-
         self.depth = depth
 
     def move(self, board: BoardC4) -> BoardC4:
-
         def evaluate(board: BoardC4, depth: int, which_move: int) -> int:
-
             term_eval = board.terminal_eval()
             if term_eval != 2:
                 return term_eval
@@ -60,9 +56,7 @@ class OracleC4(BlankPlayer):
 
 
 class TestNet:
-
     def forward(self, board: BoardC4):
-
         p_vec_test = np.array([1, 2, 3, 4, 3, 2, 1]) / 16
 
         horizontal_kernel = np.array([[1, 1, 1, 1]])
@@ -80,7 +74,9 @@ class TestNet:
         canonical_correction = 1 if board.red_move else -1
 
         for kernel in detection_kernels:
-            convolution = convolve2d(board.board_matrix * canonical_correction, kernel, mode="valid")
+            convolution = convolve2d(
+                board.board_matrix * canonical_correction, kernel, mode="valid"
+            )
             if (convolution == 4).any():
                 return (p_vec_test, 1)
             if (convolution == -4).any():
