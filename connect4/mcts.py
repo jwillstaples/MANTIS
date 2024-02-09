@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 from connect4.oracle_c4 import TestNet
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 class Node:
     def __init__(
@@ -38,23 +39,32 @@ class Node:
         if not (self.parent is None):
             self.parent.back_propagate(-1 * eval)
 
+def get_output(board: BlankBoard, nnet: torch.nn.Module):
+  p_vec, eval = nnet(board.to_tensor().unsqueeze(0).to(device))
+  p_vec = p_vec.detach().cpu().numpy()[0, :]
+  eval = eval.detach().cpu().numpy()[0]
 
-def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> BlankBoard:
-    p_vec, eval = nnet.forward(head_board)
+  return p_vec, eval
 
+
+def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 100) -> BlankBoard:
+    # p_vec, eval = nnet.forward(head_board)
+    p_vec, eval = get_output(head_board, nnet)
     head = Node()
     head.board = head_board
     head.make_children(head_board.legal_moves() * np.array(p_vec))
     head.n = 1
 
-    for i in tqdm(range(runs)):
+    # for i in tqdm(range(runs)):
+    for _ in range(runs):
         sim_node = select(head)
         if np.isclose(sim_node.value_score(), 1.0):
             sim_node.back_propagate(1.0)
         else:
             sim_board = get_board(sim_node)
 
-            p_vec, eval = nnet.forward(sim_board)
+            # p_vec, eval = nnet.forward(sim_board)
+            p_vec, eval = get_output(sim_board, nnet)
             sim_node.back_propagate(np.float64(eval))
             # p_vec_legalized = sim_board.legal_moves() * np.array(p_vec)
             sim_node.make_children(sim_board.legal_moves() * np.array(p_vec))
@@ -63,13 +73,22 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> Bla
 
     min_value = np.inf
     for child in head.children:
+        # print(child.value_score())
         if child.value_score() < min_value:
             min_value = child.value_score()
             favorite_child = child
+    # print("-" * 50)
+    legals = head_board.legal_moves()
+    values = np.array([node.value_score() for node in head.children])
 
-    print(f"Eval for Bot: {np.round(-1 * min_value, 4)}")
-
-    return get_board(favorite_child)
+    values = (values + 1) / -2  # Normalize
+    values *= legals  # Mask
+    values /= sum(values)  # Re-normalize
+    index = np.searchsorted(
+        np.cumsum(values), np.random.rand()
+    )  # Select weighted random index
+    # print(f"Eval for Bot: {np.round(-1 * min_value, 4)}")
+    return get_board(head.children[index]), values
 
 
 def select(tree: Node) -> Node:
@@ -102,6 +121,7 @@ def select(tree: Node) -> Node:
 
 def get_board(node: Node) -> BlankBoard:
     if node.board is None:
+        # TODO: ensure this move is legal?
         node.board = node.parent.board.move_from_int(node.child_index)
 
     return node.board

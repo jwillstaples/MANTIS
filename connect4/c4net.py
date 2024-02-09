@@ -1,29 +1,79 @@
 import numpy as np
 import torch
 import torch.nn as nn
-
+import torch.nn.functional as F
+import torch.nn.init as init
 
 class C4Net(nn.Module):
     def __init__(self):
-        super(C4Net, self).__init__()
-        # Define Model Layers Here
-        pass
+        super().__init__()
+        self.startBlock = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU()
+        )
+        
+        self.backBone = nn.ModuleList(
+            [ResBlock(64) for i in range(2)]
+        )
+        
+        self.policyHead = nn.Sequential(
+            nn.Conv2d(64, 32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(32 * 6 * 7, 7)
+        )
+        
+        self.valueHead = nn.Sequential(
+            nn.Conv2d(64, 3, kernel_size=3, padding=1),
+            nn.BatchNorm2d(3),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(3 * 42, 1),
+            nn.Tanh()
+        )
 
+        self.apply(self.init_weights)
+        
     def forward(self, x):
-        # x is the input, should be 3x7x6, 3 channels by 7 rows by 6 columns
-
-        # Use the model layers
-        # return a 7 len tensor and a 1x1 tensor
-        return torch.tensor([0, 0, 0, 0, 0, 0, 0]), torch.tensor([0])
+        x = self.startBlock(x)
+        for resBlock in self.backBone:
+            x = resBlock(x)
+        policy = self.policyHead(x)
+        value = self.valueHead(x)
+        return policy, value
+    
+    def init_weights(self, m):
+        if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
+            init.normal_(m.weight, mean=0, std=0.02)
+            if m.bias is not None:
+                init.zeros_(m.bias)
+    
+class ResBlock(nn.Module):
+    def __init__(self, num_hidden):
+        super().__init__()
+        self.conv1 = nn.Conv2d(num_hidden, num_hidden, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(num_hidden)
+        self.conv2 = nn.Conv2d(num_hidden, num_hidden, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(num_hidden)
+        
+    def forward(self, x):
+        residual = x
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = self.bn2(self.conv2(x))
+        x += residual
+        x = F.relu(x)
+        return x
 
 
 def test():
-    ch, R, C = 3, 7, 6
-    rand = torch.randn((ch, R, C))
+    N, ch, R, C = 10, 3, 6, 7
+    rand = torch.randn((N, ch, R, C))
     net = C4Net()
     p, v = net(rand)
-    assert p.shape == torch.Size([7])
-    assert v.shape == torch.Size([1])
+    assert p.shape == torch.Size([N,7])
+    assert v.shape == torch.Size([N,1])
+    print("Works!")
 
-
-test()
+# test()
