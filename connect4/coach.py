@@ -43,31 +43,33 @@ def play_a_game(net0, net1, track = True):
     turn = 0
     boards = []
     pis = []
+    idxs = []
     while board.terminal_eval() == 2:
         if turn == 0:
-            move, pi = mcts(board, net0)
+            move, pi, idx = mcts(board, net0)
         else:
-            move, pi = mcts(board, net1)
+            move, pi, idx = mcts(board, net1)
         if track:
             boards.append(board)
             pis.append(pi)
         board = move
+        idxs.append(idx)
     result = board.terminal_eval()
     if track:
         training_data = []
         for i in range(len(boards)):
             reward = result if i % 2 == 0 else -result
             training_data.append((boards[i], pis[i], [float(reward)]))
-        return training_data
-    return result
+        return training_data, idxs
+    return result, idxs
 
 def self_play(generate, first: bool) -> Dataset:
     net = C4Net().to(device)
     if not first:
         net.load_state_dict(torch.load("old.pt"))
     all_data = []
-    for _ in tqdm(range(generate), desc='self play...'):
-        data = play_a_game(net, net)
+    for i in tqdm(range(generate), desc='self play...'):
+        data, idxs = play_a_game(net, net)
         all_data.extend(data)
     return net, C4Dataset(all_data)
 
@@ -77,6 +79,12 @@ def training_loop():
     NUM_GENERATED = 10
     BATCH_SIZE = 10
     GAMES_TO_EVAL = 10
+
+    MAX_ITERATIONS = 1
+    EPOCHS_PER_ITERATION = 1
+    NUM_GENERATED = 1
+    BATCH_SIZE = 1
+    GAMES_TO_EVAL = 1
 
     for i in range(MAX_ITERATIONS):
         net, dataset = self_play(NUM_GENERATED, i == 0)
@@ -114,7 +122,7 @@ def training_loop():
                 net1 = net
                 win = -1
 
-            result = play_a_game(net0, net1, track = False)
+            result, idxs = play_a_game(net0, net1, track = False)
             score += result * win
 
         print(f"Iteration {i} has score {score}: " + "-"*50)

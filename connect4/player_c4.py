@@ -14,6 +14,6 @@ class PlayerC4:
         self.nnet = nnet
 
     def move(self, board: BoardC4) -> BoardC4:
-        new_board = mcts(board, self.nnet)
+        new_board, _, _ = mcts(board, self.nnet)
 
         return new_board

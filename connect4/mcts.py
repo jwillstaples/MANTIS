@@ -47,7 +47,12 @@ def get_output(board: BlankBoard, nnet: torch.nn.Module):
   return p_vec, eval
 
 
-def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 100) -> BlankBoard:
+def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 100):
+    '''
+    gets best move
+
+    returns next board, normalized values, index of move
+    '''
     # p_vec, eval = nnet.forward(head_board)
     p_vec, eval = get_output(head_board, nnet)
     head = Node()
@@ -88,7 +93,7 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 100) -> Blan
         np.cumsum(values), np.random.rand()
     )  # Select weighted random index
     # print(f"Eval for Bot: {np.round(-1 * min_value, 4)}")
-    return get_board(head.children[index]), values
+    return get_board(head.children[index]), values, index
 
 
 def select(tree: Node) -> Node:
