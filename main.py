@@ -16,7 +16,7 @@ if __name__ == "__main__":
     nnet = TestNet()
 
     bot = PlayerC4(nnet)
-    # bot = OracleC4(depth=4)
+    bot2 = OracleC4(depth=4)
 
     print_board(game_board)
 
@@ -25,7 +25,8 @@ if __name__ == "__main__":
             game_board = bot.move(game_board)
 
         else:
-            game_board = take_human(game_board)
+            # game_board = take_human(game_board)
+            game_board = bot2.move(game_board)
 
         print_board(game_board)
         result = game_board.terminal_eval()

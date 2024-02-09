@@ -49,14 +49,17 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> Bla
 
     for i in tqdm(range(runs)):
         sim_node = select(head)
-        sim_board = get_board(sim_node)
+        if np.isclose(sim_node.value_score(), 1.0):
+            sim_node.back_propagate(1.0)
+        else:
+            sim_board = get_board(sim_node)
 
-        p_vec, eval = nnet.forward(sim_board)
-        sim_node.back_propagate(np.float64(eval))
-        # p_vec_legalized = sim_board.legal_moves() * np.array(p_vec)
-        sim_node.make_children(sim_board.legal_moves() * np.array(p_vec))
+            p_vec, eval = nnet.forward(sim_board)
+            sim_node.back_propagate(np.float64(eval))
+            # p_vec_legalized = sim_board.legal_moves() * np.array(p_vec)
+            sim_node.make_children(sim_board.legal_moves() * np.array(p_vec))
 
-    print_tree(head)
+    # print_tree(head)
 
     min_value = np.inf
     for child in head.children:
@@ -64,7 +67,7 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> Bla
             min_value = child.value_score()
             favorite_child = child
 
-    print(min_value)
+    print(f"Eval for Bot: {np.round(-1 * min_value, 4)}")
 
     return get_board(favorite_child)
 
@@ -91,6 +94,7 @@ def select(tree: Node) -> Node:
 
     if max_ucb == -np.inf:
         tree.p = 0
+        tree.w = 0
         return tree
 
     return select(favorite_child)

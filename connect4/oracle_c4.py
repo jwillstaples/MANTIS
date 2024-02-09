@@ -81,8 +81,6 @@ class TestNet:
                 return (p_vec_test, 1)
             if (convolution == -4).any():
                 return (p_vec_test, -1)
-            friendly_almost = np.sum(convolution == 3)
-            enemy_almost = np.sum(convolution == -3)
             eval += 0.01 * (
                 5 * np.sum(convolution == 3)
                 + np.sum(convolution == 2)
