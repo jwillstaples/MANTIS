@@ -3,9 +3,11 @@
 # FOR GOOGLE COLAB RUNNING
 import sys
 
-sys.path.append("/content/drive/My Drive/bot")
-sys.path.append("/content/drive/My Drive/bot/connect4")
-sys.path.append("/content/drive/My Drive/bot/common")
+# sys.path.append("/content/drive/My Drive/bot")
+# sys.path.append("/content/drive/My Drive/bot/connect4")
+# sys.path.append("/content/drive/My Drive/bot/common")
+
+sys.path.append("C:\\Users\\xiayi\\Desktop\\1. Duke University Classes\\MANTIS")
 
 from c4net import C4Net
 from mcts import mcts
@@ -18,6 +20,9 @@ from connect4.board_c4 import BoardC4, print_board
 from torch.utils.data import Dataset, DataLoader
 
 from tqdm import tqdm
+import numpy as np
+
+import os
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -38,7 +43,7 @@ class C4Dataset(Dataset):
         return board, torch.tensor(pi), torch.tensor(z)
 
 
-def play_a_game(net0, net1, track = True):
+def play_a_game(net0, net1, mcts_iter, track = True):
     board = BoardC4.from_start()
     turn = 0
     boards = []
@@ -46,9 +51,9 @@ def play_a_game(net0, net1, track = True):
     idxs = []
     while board.terminal_eval() == 2:
         if turn == 0:
-            move, pi, idx = mcts(board, net0)
+            move, pi, idx = mcts(board, net0, runs = mcts_iter)
         else:
-            move, pi, idx = mcts(board, net1)
+            move, pi, idx = mcts(board, net1, runs = mcts_iter)
         if track:
             boards.append(board)
             pis.append(pi)
@@ -63,31 +68,45 @@ def play_a_game(net0, net1, track = True):
         return training_data, idxs
     return result, idxs
 
-def self_play(generate, first: bool) -> Dataset:
+def self_play(generate: int, first: bool, mcts_iter: int):
+    '''
+    Returns net, dataset, idxs of a sample game
+    '''
     net = C4Net().to(device)
     if not first:
         net.load_state_dict(torch.load("old.pt"))
+    net.eval()
     all_data = []
-    for i in tqdm(range(generate), desc='self play...'):
-        data, idxs = play_a_game(net, net)
+    for _ in tqdm(range(generate), desc='self play...'):
+        data, idxs = play_a_game(net, net, mcts_iter)
         all_data.extend(data)
-    return net, C4Dataset(all_data)
+    return net, C4Dataset(all_data), idxs
 
+def save_idxs(idxs, title="generic.npy"):
+    fp = os.path.join(SAVE_DIR, title)
+    np.save(fp, np.array(idxs))
+
+SAVE_DIR = "data"
 def training_loop():
-    MAX_ITERATIONS = 20
-    EPOCHS_PER_ITERATION = 10
-    NUM_GENERATED = 10
-    BATCH_SIZE = 10
+    MAX_ITERATIONS = 500
+    EPOCHS_PER_ITERATION = 50
+    NUM_GENERATED = 20
+    BATCH_SIZE = 50
     GAMES_TO_EVAL = 10
+    MCTS_ITER = 500
+    old_exists = False
 
-    MAX_ITERATIONS = 1
-    EPOCHS_PER_ITERATION = 1
-    NUM_GENERATED = 1
-    BATCH_SIZE = 1
-    GAMES_TO_EVAL = 1
+    # MAX_ITERATIONS = 1
+    # EPOCHS_PER_ITERATION = 1
+    # NUM_GENERATED = 1
+    # BATCH_SIZE = 1
+    # GAMES_TO_EVAL = 1
+    # MCTS_ITER = 100
+    # old_exists = False
 
     for i in range(MAX_ITERATIONS):
-        net, dataset = self_play(NUM_GENERATED, i == 0)
+        net, dataset, idxs = self_play(NUM_GENERATED, not old_exists, MCTS_ITER)
+        save_idxs(idxs, f"sp{i}")
         dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
         o_criterion = nn.MSELoss().to(device)
@@ -107,7 +126,8 @@ def training_loop():
                 optimizer.step()
 
         old_net = C4Net().to(device)
-        old_net.load_state_dict(torch.load("old.pt"))
+        if old_exists:
+            old_net.load_state_dict(torch.load("old.pt"))
 
         old_net.eval()
         net.eval()
@@ -122,13 +142,18 @@ def training_loop():
                 net1 = net
                 win = -1
 
-            result, idxs = play_a_game(net0, net1, track = False)
+            result, idxs = play_a_game(net0, net1, MCTS_ITER, track = False)
             score += result * win
+        save_idxs(idxs, f"e{i}")
 
         print(f"Iteration {i} has score {score}: " + "-"*50)
         if score > 0:
             print("...Saving...")
             torch.save(net.state_dict(), "old.pt")
+            old_exists = True
+        
+        fp = os.path.join(SAVE_DIR, f"net{i}.pt")
+        torch.save(net.state_dict(), fp)
 
 if __name__ == "__main__":
     training_loop()
