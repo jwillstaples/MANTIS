@@ -26,6 +26,7 @@ import os
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
+
 class C4Dataset(Dataset):
     def __init__(self, raw_data):
         self.raw_data = raw_data
@@ -43,7 +44,7 @@ class C4Dataset(Dataset):
         return board, torch.tensor(pi), torch.tensor(z)
 
 
-def play_a_game(net0, net1, mcts_iter, track = True):
+def play_a_game(net0, net1, mcts_iter, track=True):
     board = BoardC4.from_start()
     turn = 0
     boards = []
@@ -51,9 +52,9 @@ def play_a_game(net0, net1, mcts_iter, track = True):
     idxs = []
     while board.terminal_eval() == 2:
         if turn == 0:
-            move, pi, idx = mcts(board, net0, runs = mcts_iter)
+            move, pi, idx = mcts(board, net0, runs=mcts_iter)
         else:
-            move, pi, idx = mcts(board, net1, runs = mcts_iter)
+            move, pi, idx = mcts(board, net1, runs=mcts_iter)
         if track:
             boards.append(board)
             pis.append(pi)
@@ -68,25 +69,30 @@ def play_a_game(net0, net1, mcts_iter, track = True):
         return training_data, idxs
     return result, idxs
 
+
 def self_play(generate: int, first: bool, mcts_iter: int):
-    '''
+    """
     Returns net, dataset, idxs of a sample game
-    '''
+    """
     net = C4Net().to(device)
     if not first:
         net.load_state_dict(torch.load("old.pt"))
     net.eval()
     all_data = []
-    for _ in tqdm(range(generate), desc='self play...'):
+    for _ in tqdm(range(generate), desc="self play..."):
         data, idxs = play_a_game(net, net, mcts_iter)
         all_data.extend(data)
     return net, C4Dataset(all_data), idxs
+
 
 def save_idxs(idxs, title="generic.npy"):
     fp = os.path.join(SAVE_DIR, title)
     np.save(fp, np.array(idxs))
 
+
 SAVE_DIR = "data3"
+
+
 def training_loop():
     MAX_ITERATIONS = 500
     EPOCHS_PER_ITERATION = 50
@@ -112,8 +118,10 @@ def training_loop():
         o_criterion = nn.MSELoss().to(device)
         p_criterion = nn.CrossEntropyLoss().to(device)
 
-        optimizer = optim.Adam(net.parameters(), lr=0.002, betas=(0.5, 0.999), weight_decay=1e-5)
-        for _ in tqdm(range(EPOCHS_PER_ITERATION), desc='training...'):
+        optimizer = optim.Adam(
+            net.parameters(), lr=0.002, betas=(0.5, 0.999), weight_decay=1e-5
+        )
+        for _ in tqdm(range(EPOCHS_PER_ITERATION), desc="training..."):
             net.train()
             for _, (bt, pi, z) in enumerate(dataloader):
                 bt = bt.to(device)
@@ -133,7 +141,7 @@ def training_loop():
         net.eval()
 
         score = 0
-        for j in tqdm(range(GAMES_TO_EVAL), desc='evaluating...'):
+        for j in tqdm(range(GAMES_TO_EVAL), desc="evaluating..."):
             net0 = net
             net1 = old_net
             win = 1
@@ -142,18 +150,19 @@ def training_loop():
                 net1 = net
                 win = -1
 
-            result, idxs = play_a_game(net0, net1, MCTS_ITER, track = False)
+            result, idxs = play_a_game(net0, net1, MCTS_ITER, track=False)
             score += result * win
         save_idxs(idxs, f"e{i}")
 
-        print(f"Iteration {i} has score {score}: " + "-"*50)
+        print(f"Iteration {i} has score {score}: " + "-" * 50)
         if score > 0:
             print("...Saving...")
             torch.save(net.state_dict(), "old.pt")
             old_exists = True
-        
+
         fp = os.path.join(SAVE_DIR, f"net{i}.pt")
         torch.save(net.state_dict(), fp)
+
 
 if __name__ == "__main__":
     training_loop()

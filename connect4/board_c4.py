@@ -98,7 +98,7 @@ class BoardC4(BlankBoard):
         if self.red_move:
             return torch.stack([t1, t0, tn1])
         return torch.stack([tn1, t0, t1])
-    
+
     def player_perspective_eval(self) -> int:
         terminal = self.terminal_eval()
 

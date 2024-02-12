@@ -4,38 +4,35 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 
+
 class C4Net(nn.Module):
     def __init__(self):
         super().__init__()
         self.startBlock = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU()
+            nn.Conv2d(3, 64, kernel_size=3, padding=1), nn.BatchNorm2d(64), nn.ReLU()
         )
-        
-        self.backBone = nn.ModuleList(
-            [ResBlock(64) for i in range(2)]
-        )
-        
+
+        self.backBone = nn.ModuleList([ResBlock(64) for i in range(2)])
+
         self.policyHead = nn.Sequential(
             nn.Conv2d(64, 32, kernel_size=3, padding=1),
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(32 * 6 * 7, 7)
+            nn.Linear(32 * 6 * 7, 7),
         )
-        
+
         self.valueHead = nn.Sequential(
             nn.Conv2d(64, 3, kernel_size=3, padding=1),
             nn.BatchNorm2d(3),
             nn.ReLU(),
             nn.Flatten(),
             nn.Linear(3 * 42, 1),
-            nn.Tanh()
+            nn.Tanh(),
         )
 
         self.apply(self.init_weights)
-        
+
     def forward(self, x):
         x = self.startBlock(x)
         for resBlock in self.backBone:
@@ -43,13 +40,14 @@ class C4Net(nn.Module):
         policy = self.policyHead(x)
         value = self.valueHead(x)
         return policy, value
-    
+
     def init_weights(self, m):
         if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
             init.normal_(m.weight, mean=0, std=0.02)
             if m.bias is not None:
                 init.zeros_(m.bias)
-    
+
+
 class ResBlock(nn.Module):
     def __init__(self, num_hidden):
         super().__init__()
@@ -57,7 +55,7 @@ class ResBlock(nn.Module):
         self.bn1 = nn.BatchNorm2d(num_hidden)
         self.conv2 = nn.Conv2d(num_hidden, num_hidden, kernel_size=3, padding=1)
         self.bn2 = nn.BatchNorm2d(num_hidden)
-        
+
     def forward(self, x):
         residual = x
         x = F.relu(self.bn1(self.conv1(x)))
@@ -72,8 +70,9 @@ def test():
     rand = torch.randn((N, ch, R, C))
     net = C4Net()
     p, v = net(rand)
-    assert p.shape == torch.Size([N,7])
-    assert v.shape == torch.Size([N,1])
+    assert p.shape == torch.Size([N, 7])
+    assert v.shape == torch.Size([N, 1])
     print("Works!")
+
 
 # test()

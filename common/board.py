@@ -31,7 +31,7 @@ class BlankBoard:
         of the move in the p-vector
         """
         pass
-    
+
     @abc.abstractmethod
     def to_tensor(self) -> torch.tensor:
         """

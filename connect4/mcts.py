@@ -9,6 +9,7 @@ from connect4.oracle_c4 import TestNet
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
+
 class Node:
     def __init__(
         self, parent: "Node" = None, p: np.float64 = None, child_index: int = None
@@ -39,6 +40,7 @@ class Node:
         if not (self.parent is None):
             self.parent.back_propagate(-1 * eval)
 
+
 def get_output(board: BlankBoard, nnet: torch.nn.Module):
     if board.terminal_eval() == 2:
         p_vec, eval = nnet(board.to_tensor().unsqueeze(0).to(device))
@@ -49,11 +51,11 @@ def get_output(board: BlankBoard, nnet: torch.nn.Module):
 
 
 def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
-    '''
+    """
     gets best move
 
     returns next board, normalized values, index of move
-    '''
+    """
     # p_vec, eval = nnet.forward(head_board)
     p_vec, eval = get_output(head_board, nnet)
     head = Node()
@@ -116,7 +118,7 @@ def select(tree: Node) -> Node:
             favorite_child = child
 
     if max_ucb == -np.inf:
-        # represents case where no child represents legal move 
+        # represents case where no child represents legal move
         tree.w = 0
         return tree
 
@@ -126,7 +128,9 @@ def select(tree: Node) -> Node:
 def get_board(node: Node) -> BlankBoard:
     if node.board is None:
         # TODO: ensure this move is legal?
-        assert node.parent.board.legal_moves()[node.child_index], "making board from illegal move"
+        assert node.parent.board.legal_moves()[
+            node.child_index
+        ], "making board from illegal move"
         node.board = node.parent.board.move_from_int(node.child_index)
 
     return node.board
