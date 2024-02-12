@@ -86,7 +86,7 @@ def save_idxs(idxs, title="generic.npy"):
     fp = os.path.join(SAVE_DIR, title)
     np.save(fp, np.array(idxs))
 
-SAVE_DIR = "data2"
+SAVE_DIR = "data3"
 def training_loop():
     MAX_ITERATIONS = 500
     EPOCHS_PER_ITERATION = 50
@@ -101,10 +101,10 @@ def training_loop():
     # NUM_GENERATED = 1
     # BATCH_SIZE = 1
     # GAMES_TO_EVAL = 1
-    # MCTS_ITER = 100
+    # MCTS_ITER = 50
     # old_exists = False
 
-    for i in range(41, MAX_ITERATIONS):
+    for i in range(MAX_ITERATIONS):
         net, dataset, idxs = self_play(NUM_GENERATED, not old_exists, MCTS_ITER)
         save_idxs(idxs, f"sp{i}")
         dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)

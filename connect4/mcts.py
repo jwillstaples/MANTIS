@@ -45,7 +45,7 @@ def get_output(board: BlankBoard, nnet: torch.nn.Module):
         p_vec = p_vec.detach().cpu().numpy()[0, :]
         eval = eval.detach().cpu().numpy()[0]
         return p_vec, eval
-    return [], board.player_perspective_eval()
+    return np.zeros(7), board.player_perspective_eval()
 
 
 def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 100):
