@@ -91,8 +91,8 @@ def training_loop():
     MAX_ITERATIONS = 500
     EPOCHS_PER_ITERATION = 50
     NUM_GENERATED = 20
-    BATCH_SIZE = 50
-    GAMES_TO_EVAL = 10
+    BATCH_SIZE = 10
+    GAMES_TO_EVAL = 9
     MCTS_ITER = 500
     old_exists = True
 

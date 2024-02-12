@@ -95,7 +95,17 @@ class BoardC4(BlankBoard):
         t1 = (tb == 1).float()
         t0 = (tb == 0).float()
         tn1 = (tb == -1).float()
-        return torch.stack([t1, t0, tn1])
+        if self.red_move:
+            return torch.stack([t1, t0, tn1])
+        return torch.stack([tn1, t0, t1])
+    
+    def player_perspective_eval(self) -> int:
+        terminal = self.terminal_eval()
+
+        if terminal != 2:
+            mult = 1 if self.red_move else -1
+            return mult * terminal
+        return terminal
 
 
 def print_board(board: BoardC4) -> None:
