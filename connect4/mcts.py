@@ -49,8 +49,8 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 1000) -> Bla
 
     for i in tqdm(range(runs)):
         sim_node = select(head)
-        if np.isclose(sim_node.value_score(), 1.0):
-            sim_node.back_propagate(1.0)
+        if np.isclose(sim_node.value_score(), -1.0):
+            sim_node.back_propagate(-1.0)
         else:
             sim_board = get_board(sim_node)
 
