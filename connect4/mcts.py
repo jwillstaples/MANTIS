@@ -48,7 +48,7 @@ def get_output(board: BlankBoard, nnet: torch.nn.Module):
     return np.zeros(7), board.player_perspective_eval()
 
 
-def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 100):
+def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
     '''
     gets best move
 
@@ -64,16 +64,14 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 100):
     # for i in tqdm(range(runs)):
     for _ in range(runs):
         sim_node = select(head)
-        if np.isclose(sim_node.value_score(), -1.0):
-            sim_node.back_propagate(-1.0)
+        sim_board = get_board(sim_node)
+        p_vec, eval = get_output(sim_board, nnet)
+        if np.isclose(np.sum(p_vec), 0.0):
+            sim_node.back_propagate(eval)
         else:
-            sim_board = get_board(sim_node)
-
-            # p_vec, eval = nnet.forward(sim_board)
-            p_vec, eval = get_output(sim_board, nnet)
             sim_node.back_propagate(np.float64(eval))
-            # p_vec_legalized = sim_board.legal_moves() * np.array(p_vec)
-            sim_node.make_children(sim_board.legal_moves() * np.array(p_vec))
+            p_vec_legalized = sim_board.legal_moves() * np.array(p_vec)
+            sim_node.make_children(p_vec_legalized / np.sum(p_vec_legalized))
 
     # print_tree(head)
 
@@ -113,12 +111,12 @@ def select(tree: Node) -> Node:
     favorite_child = tree.children[0]
     for child in tree.children:
         current_ucb = _ucb(child)
-        if current_ucb > max_ucb and child.p > 1e-8:
+        if current_ucb > max_ucb and not np.isclose(child.p, 0.0):
             max_ucb = current_ucb
             favorite_child = child
 
     if max_ucb == -np.inf:
-        tree.p = 0
+        # represents case where no child represents legal move 
         tree.w = 0
         return tree
 
@@ -128,6 +126,7 @@ def select(tree: Node) -> Node:
 def get_board(node: Node) -> BlankBoard:
     if node.board is None:
         # TODO: ensure this move is legal?
+        assert node.parent.board.legal_moves()[node.child_index], "making board from illegal move"
         node.board = node.parent.board.move_from_int(node.child_index)
 
     return node.board
