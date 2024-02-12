@@ -81,7 +81,7 @@ class TestNet:
                 return (p_vec_test, 1)
             if (convolution == -4).any():
                 return (p_vec_test, -1)
-            eval += 0.01 * (
+            eval += 0.005 * (
                 5 * np.sum(convolution == 3)
                 + np.sum(convolution == 2)
                 - 5 * np.sum(convolution == -3)

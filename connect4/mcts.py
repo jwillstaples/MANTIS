@@ -50,6 +50,13 @@ def get_output(board: BlankBoard, nnet: torch.nn.Module):
     return np.zeros(7), board.player_perspective_eval()
 
 
+def add_dirichlet(p_vec: np.ndarray) -> np.ndarray:
+
+    epsilon = 0.25  # hyper-parameter for exploration
+    noise = np.random.dirichlet(0.03, p_vec.shape)
+    return (1 - epsilon) * p_vec + epsilon * noise
+
+
 def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
     """
     gets best move
@@ -60,7 +67,7 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
     p_vec, eval = get_output(head_board, nnet)
     head = Node()
     head.board = head_board
-    head.make_children(head_board.legal_moves() * np.array(p_vec))
+    head.make_children(head_board.legal_moves() * add_dirichlet(np.array(p_vec)))
     head.n = 1
 
     # for i in tqdm(range(runs)):
@@ -72,7 +79,7 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
             sim_node.back_propagate(eval)
         else:
             sim_node.back_propagate(np.float64(eval))
-            p_vec_legalized = sim_board.legal_moves() * np.array(p_vec)
+            p_vec_legalized = sim_board.legal_moves() * add_dirichlet(np.array(p_vec))
             sim_node.make_children(p_vec_legalized / np.sum(p_vec_legalized))
 
     # print_tree(head)
@@ -90,9 +97,10 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
     values = (values + 1) / -2  # Normalize
     values *= legals  # Mask
     values /= sum(values)  # Re-normalize
-    index = np.searchsorted(
-        np.cumsum(values), np.random.rand()
-    )  # Select weighted random index
+    # index = np.searchsorted(
+    #     np.cumsum(values), np.random.rand()
+    # )  # Select weighted random index
+    index = np.argmax(values)
     # print(f"Eval for Bot: {np.round(-1 * min_value, 4)}")
     return get_board(head.children[index]), values, index
 
