@@ -24,8 +24,10 @@ class Node:
 
     def make_children(self, ps: np.ndarray):
         self.children = np.empty(ps.shape, dtype=Node)
+        legals = self.board.legal_moves()
         for i, pc in enumerate(ps):
-            self.children[i] = Node(self, pc, i)
+            if legals[i] == True:
+                self.children[i] = Node(self, pc, i)
 
     def value_score(self):
         if self.n > 0:
@@ -41,19 +43,19 @@ class Node:
             self.parent.back_propagate(-1 * eval)
 
 
-def get_output(board: BlankBoard, nnet: torch.nn.Module):
+def get_output(board: BlankBoard, nnet: torch.nn.Module): # Optional 7x1, float
     if board.terminal_eval() == 2:
         p_vec, eval = nnet(board.to_tensor().unsqueeze(0).to(device))
         p_vec = p_vec.detach().cpu().numpy()[0, :]
         eval = eval.detach().cpu().numpy()[0]
-        return p_vec, eval
-    return np.zeros(7), board.player_perspective_eval()
+        return p_vec, np.float64(eval)
+    return None, board.player_perspective_eval()
 
 
 def add_dirichlet(p_vec: np.ndarray) -> np.ndarray:
 
     epsilon = 0.25  # hyper-parameter for exploration
-    noise = np.random.dirichlet(0.03, p_vec.shape)
+    noise = np.random.dirichlet(0.03 * np.ones(p_vec.shape))
     return (1 - epsilon) * p_vec + epsilon * noise
 
 
@@ -67,7 +69,7 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
     p_vec, eval = get_output(head_board, nnet)
     head = Node()
     head.board = head_board
-    head.make_children(head_board.legal_moves() * add_dirichlet(np.array(p_vec)))
+    head.make_children(add_dirichlet(np.array(p_vec)))
     head.n = 1
 
     # for i in tqdm(range(runs)):
@@ -75,31 +77,23 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
         sim_node = select(head)
         sim_board = get_board(sim_node)
         p_vec, eval = get_output(sim_board, nnet)
-        if np.isclose(np.sum(p_vec), 0.0):
+        if p_vec is None:
             sim_node.back_propagate(eval)
         else:
-            sim_node.back_propagate(np.float64(eval))
-            p_vec_legalized = sim_board.legal_moves() * add_dirichlet(np.array(p_vec))
-            sim_node.make_children(p_vec_legalized / np.sum(p_vec_legalized))
+            sim_node.back_propagate(eval)
+            sim_node.make_children(add_dirichlet(np.array(p_vec)))
 
-    # print_tree(head)
+    values = np.array([-node.value_score() if node is not None else -np.inf for node in head.children])
+    es = np.exp(values)
+    values = es / sum(es)
+    # values = (values + 1) / -2  # Normalize
+    # values *= legals  # Mask
+    # values /= sum(values)  # Re-normalize
 
-    min_value = np.inf
-    for child in head.children:
-        # print(child.value_score())
-        if child.value_score() < min_value:
-            min_value = child.value_score()
-            favorite_child = child
-    # print("-" * 50)
-    legals = head_board.legal_moves()
-    values = np.array([node.value_score() for node in head.children])
-
-    values = (values + 1) / -2  # Normalize
-    values *= legals  # Mask
-    values /= sum(values)  # Re-normalize
     # index = np.searchsorted(
     #     np.cumsum(values), np.random.rand()
     # )  # Select weighted random index
+
     index = np.argmax(values)
     # print(f"Eval for Bot: {np.round(-1 * min_value, 4)}")
     return get_board(head.children[index]), values, index
@@ -111,31 +105,29 @@ def select(tree: Node) -> Node:
         # cinit = 1.25
 
         # this is classic ucb, I think alphazero implements a slightly altered version
-
+        if tree == None:
+            return -np.inf
+        
         return tree.p * np.sqrt(tree.parent.n) / (tree.n + 1) - tree.value_score()
 
-    if tree.children is None:
+    if tree.children is None or sum(tree.board.legal_moves()) == 0:
         return tree
 
-    max_ucb = -np.inf
+    max_ucb = _ucb(tree.children[0])
     favorite_child = tree.children[0]
     for child in tree.children:
         current_ucb = _ucb(child)
-        if current_ucb > max_ucb and not np.isclose(child.p, 0.0):
+        if current_ucb > max_ucb:
             max_ucb = current_ucb
             favorite_child = child
 
     if max_ucb == -np.inf:
-        # represents case where no child represents legal move
-        tree.w = 0
-        return tree
+        raise Exception("No max UCB")
 
     return select(favorite_child)
 
-
 def get_board(node: Node) -> BlankBoard:
     if node.board is None:
-        # TODO: ensure this move is legal?
         assert node.parent.board.legal_moves()[
             node.child_index
         ], "making board from illegal move"

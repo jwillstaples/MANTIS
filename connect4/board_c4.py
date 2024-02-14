@@ -106,6 +106,23 @@ class BoardC4(BlankBoard):
             mult = 1 if self.red_move else -1
             return mult * terminal
         return terminal
+    
+    def __str__(self):
+        for row in self.board_matrix.T[::-1]:
+            print("|", end="")
+            for val in row:
+                if val == 1:
+                    print("x", end="")
+                elif val == -1:
+                    print("o", end="")
+                else:
+                    print(" ", end="")
+                print("|", end="")
+            print("")
+        for i in range(7):
+            print(f" {i}", end="")
+        print("\n")
+        return ""
 
 
 def print_board(board: BoardC4) -> None:

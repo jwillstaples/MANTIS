@@ -19,7 +19,7 @@ class C4Net(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(32 * 6 * 7, 7),
+            nn.Linear(32 * 6 * 7, 7)
         )
 
         self.valueHead = nn.Sequential(
@@ -39,7 +39,7 @@ class C4Net(nn.Module):
             x = resBlock(x)
         policy = self.policyHead(x)
         value = self.valueHead(x)
-        return policy, value
+        return F.softmax(policy, dim=1), value
 
     def init_weights(self, m):
         if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):

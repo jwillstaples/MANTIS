@@ -94,21 +94,21 @@ SAVE_DIR = "data3"
 
 
 def training_loop():
-    MAX_ITERATIONS = 500
-    EPOCHS_PER_ITERATION = 50
-    NUM_GENERATED = 20
-    BATCH_SIZE = 10
-    GAMES_TO_EVAL = 9
-    MCTS_ITER = 500
-    old_exists = True
+    # MAX_ITERATIONS = 500
+    # EPOCHS_PER_ITERATION = 50
+    # NUM_GENERATED = 20
+    # BATCH_SIZE = 10
+    # GAMES_TO_EVAL = 9
+    # MCTS_ITER = 500
+    # old_exists = True
 
-    # MAX_ITERATIONS = 1
-    # EPOCHS_PER_ITERATION = 1
-    # NUM_GENERATED = 1
-    # BATCH_SIZE = 1
-    # GAMES_TO_EVAL = 1
-    # MCTS_ITER = 50
-    # old_exists = False
+    MAX_ITERATIONS = 1
+    EPOCHS_PER_ITERATION = 1
+    NUM_GENERATED = 1
+    BATCH_SIZE = 1
+    GAMES_TO_EVAL = 1
+    MCTS_ITER = 50
+    old_exists = False
 
     for i in range(MAX_ITERATIONS):
         net, dataset, idxs = self_play(NUM_GENERATED, not old_exists, MCTS_ITER)
@@ -141,6 +141,7 @@ def training_loop():
         net.eval()
 
         score = 0
+        res = [0] * 3
         for j in tqdm(range(GAMES_TO_EVAL), desc="evaluating..."):
             net0 = net
             net1 = old_net
@@ -152,9 +153,26 @@ def training_loop():
 
             result, idxs = play_a_game(net0, net1, MCTS_ITER, track=False)
             score += result * win
+
+            if win == 1:
+                if result == 1:
+                    res[0] += 1
+                if result == 0:
+                    res[1] += 1
+                if result == -1:
+                    res[2] += 1
+            if win == -1:
+                if result == 1:
+                    res[2] += 1
+                if result == 0:
+                    res[1] += 1
+                if result == -1:
+                    res[0] += 1
+        
         save_idxs(idxs, f"e{i}")
 
         print(f"Iteration {i} has score {score}: " + "-" * 50)
+        print(f"with result w: {res[0]}, d: {res[1]}, l: {res[2]}")
         if score > 0:
             print("...Saving...")
             torch.save(net.state_dict(), "old.pt")
@@ -166,3 +184,8 @@ def training_loop():
 
 if __name__ == "__main__":
     training_loop()
+
+    # net = C4Net()
+    # net.load_state_dict(torch.load("old.pt", map_location='cpu'))
+
+    # data, idx = play_a_game(net, net, 500)
