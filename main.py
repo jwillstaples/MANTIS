@@ -13,8 +13,6 @@ def bot_v_bot():
     game_board = BoardC4.from_start()
     result = 2
 
-    nnet = TestNet()
-
     bot = MinimaxC4(depth=4)
     bot2 = MinimaxC4(depth=4)
 
