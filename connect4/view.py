@@ -1,6 +1,7 @@
 import arcade
 
 from connect4.board_c4 import BoardC4
+from connect4.mantis_c4 import MantisC4
 from connect4.oracle_c4 import OracleC4, TestNet
 from connect4.player_c4 import PlayerC4
 from connect4.c4net import C4Net
@@ -29,8 +30,10 @@ class C4Game(arcade.Window):
         self.board = BoardC4.from_start()
         self.result = 2
         # self.bot = OracleC4(depth=4)
-        nnet = TestNet()
-        self.bot = PlayerC4(nnet)
+        # nnet = TestNet()
+        # self.bot = PlayerC4(nnet)
+
+        self.bot = MantisC4("old.pt")
 
     def on_draw(self):
         self.clear()
