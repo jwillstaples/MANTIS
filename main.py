@@ -7,8 +7,8 @@ from connect4.minimax_c4 import TestNet
 import time
 import arcade
 
-
 from connect4.view import C4Game
+
 def bot_v_bot():
     game_board = BoardC4.from_start()
     result = 2

@@ -50,11 +50,12 @@ def play_a_game(net0, net1, mcts_iter, track=True):
     boards = []
     pis = []
     idxs = []
+    current_tree = None
     while board.terminal_eval() == 2:
         if turn == 0:
-            move, pi, idx = mcts(board, net0, runs=mcts_iter)
+            move, pi, idx, current_tree = mcts(board, net0, runs=mcts_iter, head_node=current_tree)
         else:
-            move, pi, idx = mcts(board, net1, runs=mcts_iter)
+            move, pi, idx, current_tree = mcts(board, net1, runs=mcts_iter, head_node=current_tree)
         if track:
             boards.append(board)
             pis.append(pi)

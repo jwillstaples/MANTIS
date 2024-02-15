@@ -59,7 +59,7 @@ def add_dirichlet(p_vec: np.ndarray) -> np.ndarray:
     return (1 - epsilon) * p_vec + epsilon * noise
 
 
-def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
+def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500, head_node: Node = None):
     """
     gets best move
 
@@ -68,14 +68,24 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
     start = time.time()
     forward_time = 0
 
+
+    if head_node is None: 
+        head = Node()
+        head.board = head_board
+        head.make_children(add_dirichlet(np.array(p_vec)))
+        head.n = 0
+    else:
+        head = head_node
+        head.parent = None
+        head.child_index = None 
+        head.p = None
+
+        runs = runs - head_node.n
+
     sf = time.time()
     p_vec, eval = get_output(head_board, nnet)
     forward_time += time.time() - sf
-    head = Node()
-    head.board = head_board
-    head.make_children(add_dirichlet(np.array(p_vec)))
-    head.n = 1
-
+    
     for _ in range(runs):
         sim_node = select(head)
         sim_board = get_board(sim_node)
@@ -96,7 +106,7 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
     
     tot = time.time() - start
     # print(f"Tot: {tot}, f: {forward_time}, percent = {forward_time/tot*100}%")
-    return get_board(head.children[index]), values, index
+    return get_board(head.children[index]), values, index, head.children[index]
 
 
 def select(tree: Node) -> Node:
