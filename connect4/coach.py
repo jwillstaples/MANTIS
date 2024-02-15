@@ -90,25 +90,25 @@ def save_idxs(idxs, title="generic.npy"):
     np.save(fp, np.array(idxs))
 
 
-SAVE_DIR = "data3"
+SAVE_DIR = "data5"
 
 
 def training_loop():
-    # MAX_ITERATIONS = 500
-    # EPOCHS_PER_ITERATION = 50
-    # NUM_GENERATED = 20
-    # BATCH_SIZE = 10
-    # GAMES_TO_EVAL = 9
-    # MCTS_ITER = 500
-    # old_exists = True
-
-    MAX_ITERATIONS = 1
-    EPOCHS_PER_ITERATION = 1
-    NUM_GENERATED = 1
-    BATCH_SIZE = 1
-    GAMES_TO_EVAL = 1
-    MCTS_ITER = 50
+    MAX_ITERATIONS = 500
+    EPOCHS_PER_ITERATION = 50
+    NUM_GENERATED = 30
+    BATCH_SIZE = 15
+    GAMES_TO_EVAL = 9
+    MCTS_ITER = 500
     old_exists = False
+
+    # MAX_ITERATIONS = 1
+    # EPOCHS_PER_ITERATION = 1
+    # NUM_GENERATED = 1
+    # BATCH_SIZE = 1
+    # GAMES_TO_EVAL = 1
+    # MCTS_ITER = 50
+    # old_exists = False
 
     for i in range(MAX_ITERATIONS):
         net, dataset, idxs = self_play(NUM_GENERATED, not old_exists, MCTS_ITER)

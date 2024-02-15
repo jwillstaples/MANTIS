@@ -5,6 +5,8 @@ from connect4.c4net import C4Net
 from typing import List
 from tqdm import tqdm
 
+import time
+
 from connect4.oracle_c4 import TestNet
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -65,18 +67,23 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
 
     returns next board, normalized values, index of move
     """
-    # p_vec, eval = nnet.forward(head_board)
+    start = time.time()
+    forward_time = 0
+
+    sf = time.time()
     p_vec, eval = get_output(head_board, nnet)
+    forward_time += time.time() - sf
     head = Node()
     head.board = head_board
     head.make_children(add_dirichlet(np.array(p_vec)))
     head.n = 1
 
-    # for i in tqdm(range(runs)):
     for _ in range(runs):
         sim_node = select(head)
         sim_board = get_board(sim_node)
+        sf = time.time()
         p_vec, eval = get_output(sim_board, nnet)
+        forward_time += time.time() - sf
         if p_vec is None:
             sim_node.back_propagate(eval)
         else:
@@ -86,16 +93,11 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500):
     values = np.array([-node.value_score() if node is not None else -np.inf for node in head.children])
     es = np.exp(values)
     values = es / sum(es)
-    # values = (values + 1) / -2  # Normalize
-    # values *= legals  # Mask
-    # values /= sum(values)  # Re-normalize
-
-    # index = np.searchsorted(
-    #     np.cumsum(values), np.random.rand()
-    # )  # Select weighted random index
 
     index = np.argmax(values)
-    # print(f"Eval for Bot: {np.round(-1 * min_value, 4)}")
+    
+    tot = time.time() - start
+    # print(f"Tot: {tot}, f: {forward_time}, percent = {forward_time/tot*100}%")
     return get_board(head.children[index]), values, index
 
 
