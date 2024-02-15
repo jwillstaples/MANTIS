@@ -122,3 +122,4 @@ def print_tree(tree: Node, depth: int = 0):
 
     for child in tree.children:
         print_tree(child, depth=depth + 1)
+

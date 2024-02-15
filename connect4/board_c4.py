@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import numpy as np
+import torch
 
 from common.board import BlankBoard
 from scipy.signal import convolve2d
@@ -88,6 +89,40 @@ class BoardC4(BlankBoard):
     @classmethod
     def from_start(cls):
         return cls(np.zeros((7, 6), dtype=int), True)
+
+    def to_tensor(self) -> torch.tensor:
+        tb = torch.from_numpy(self.board_matrix)
+        t1 = (tb == 1).float()
+        t0 = (tb == 0).float()
+        tn1 = (tb == -1).float()
+        if self.red_move:
+            return torch.stack([t1, t0, tn1])
+        return torch.stack([tn1, t0, t1])
+
+    def player_perspective_eval(self) -> int:
+        terminal = self.terminal_eval()
+
+        if terminal != 2:
+            mult = 1 if self.red_move else -1
+            return mult * terminal
+        return terminal
+    
+    def __str__(self):
+        for row in self.board_matrix.T[::-1]:
+            print("|", end="")
+            for val in row:
+                if val == 1:
+                    print("x", end="")
+                elif val == -1:
+                    print("o", end="")
+                else:
+                    print(" ", end="")
+                print("|", end="")
+            print("")
+        for i in range(7):
+            print(f" {i}", end="")
+        print("\n")
+        return ""
 
 
 def print_board(board: BoardC4) -> None:
