@@ -10,7 +10,7 @@ import sys
 sys.path.append("C:\\Users\\xiayi\\Desktop\\1. Duke University Classes\\MANTIS")
 
 from c4net import C4Net
-from mcts import mcts
+from common.mcts import mcts
 
 import torch
 import torch.nn as nn

@@ -2,7 +2,7 @@ import arcade
 
 from connect4.board_c4 import BoardC4
 from connect4.mantis_c4 import MantisC4
-from connect4.oracle_c4 import OracleC4, TestNet
+from connect4.minimax_c4 import OracleC4, TestNet
 from connect4.player_c4 import PlayerC4
 from connect4.c4net import C4Net
 

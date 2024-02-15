@@ -1,13 +1,11 @@
 import numpy as np
 from common.board import BlankBoard
 import torch
-from connect4.c4net import C4Net
 from typing import List
 from tqdm import tqdm
 
 import time
 
-from connect4.oracle_c4 import TestNet
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 

@@ -6,7 +6,7 @@ from typing import Tuple
 from scipy.signal import convolve2d
 
 
-class OracleC4(BlankPlayer):
+class MinimaxC4(BlankPlayer):
     def __init__(self, depth: int):
         self.depth = depth
 
@@ -54,7 +54,7 @@ class OracleC4(BlankPlayer):
         eval = print(child_evals[-1][0])
         return child_evals[-1][1]
 
-
+@DeprecationWarning
 class TestNet:
     def forward(self, board: BoardC4):
         p_vec_test = np.array([1, 2, 3, 4, 3, 2, 1]) / 16

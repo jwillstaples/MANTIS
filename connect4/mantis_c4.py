@@ -3,7 +3,7 @@ from connect4.board_c4 import BoardC4
 from connect4.c4net import C4Net
 import torch
 
-from connect4.mcts import mcts
+from common.mcts import mcts
 
 class MantisC4(BlankPlayer):
 
