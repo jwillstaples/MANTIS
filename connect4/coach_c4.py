@@ -53,9 +53,13 @@ def play_a_game(net0, net1, mcts_iter, track=True):
     current_tree = None
     while board.terminal_eval() == 2:
         if turn == 0:
-            move, pi, idx, current_tree = mcts(board, net0, runs=mcts_iter, head_node=current_tree)
+            move, pi, idx, current_tree = mcts(
+                board, net0, runs=mcts_iter, head_node=current_tree
+            )
         else:
-            move, pi, idx, current_tree = mcts(board, net1, runs=mcts_iter, head_node=current_tree)
+            move, pi, idx, current_tree = mcts(
+                board, net1, runs=mcts_iter, head_node=current_tree
+            )
         if track:
             boards.append(board)
             pis.append(pi)
@@ -169,7 +173,7 @@ def training_loop():
                     res[1] += 1
                 if result == -1:
                     res[0] += 1
-        
+
         save_idxs(idxs, f"e{i}")
 
         print(f"Iteration {i} has score {score}: " + "-" * 50)

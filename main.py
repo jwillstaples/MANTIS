@@ -9,6 +9,7 @@ import arcade
 
 from connect4.view import C4Game
 
+
 def bot_v_bot():
     game_board = BoardC4.from_start()
     result = 2
@@ -35,6 +36,7 @@ def bot_v_bot():
         print("o wins")
     else:
         print("draw")
+
 
 def bot_v_human_C4():
     SCREEN_WIDTH = 900

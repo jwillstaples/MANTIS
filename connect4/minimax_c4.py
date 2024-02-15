@@ -54,6 +54,7 @@ class MinimaxC4(BlankPlayer):
         eval = print(child_evals[-1][0])
         return child_evals[-1][1]
 
+
 @DeprecationWarning
 class TestNet:
     def forward(self, board: BoardC4):

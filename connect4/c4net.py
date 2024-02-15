@@ -19,7 +19,7 @@ class C4Net(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(32 * 6 * 7, 7)
+            nn.Linear(32 * 6 * 7, 7),
         )
 
         self.valueHead = nn.Sequential(

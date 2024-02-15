@@ -5,6 +5,7 @@ import torch
 
 from common.mcts import mcts
 
+
 class MantisC4(BlankPlayer):
 
     def __init__(self, fp):
@@ -16,5 +17,5 @@ class MantisC4(BlankPlayer):
         self.net.eval()
 
     def move(self, board: BoardC4):
-        board , _, _ = mcts(board, self.net)
+        board, _, _ = mcts(board, self.net)
         return board

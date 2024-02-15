@@ -43,7 +43,7 @@ class Node:
             self.parent.back_propagate(-1 * eval)
 
 
-def get_output(board: BlankBoard, nnet: torch.nn.Module): # Optional 7x1, float
+def get_output(board: BlankBoard, nnet: torch.nn.Module):  # Optional 7x1, float
     if board.terminal_eval() == 2:
         p_vec, eval = nnet(board.to_tensor().unsqueeze(0).to(device))
         p_vec = p_vec.detach().cpu().numpy()[0, :]
@@ -59,7 +59,12 @@ def add_dirichlet(p_vec: np.ndarray) -> np.ndarray:
     return (1 - epsilon) * p_vec + epsilon * noise
 
 
-def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500, head_node: Node = None):
+def mcts(
+    head_board: BlankBoard,
+    nnet: torch.nn.Module,
+    runs: int = 500,
+    head_node: Node = None,
+):
     """
     gets best move
 
@@ -68,8 +73,7 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500, head_no
     start = time.time()
     forward_time = 0
 
-
-    if head_node is None: 
+    if head_node is None:
         head = Node()
         head.board = head_board
         head.make_children(add_dirichlet(np.array(p_vec)))
@@ -77,7 +81,7 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500, head_no
     else:
         head = head_node
         head.parent = None
-        head.child_index = None 
+        head.child_index = None
         head.p = None
 
         runs = runs - head_node.n
@@ -85,7 +89,7 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500, head_no
     sf = time.time()
     p_vec, eval = get_output(head_board, nnet)
     forward_time += time.time() - sf
-    
+
     for _ in range(runs):
         sim_node = select(head)
         sim_board = get_board(sim_node)
@@ -98,12 +102,14 @@ def mcts(head_board: BlankBoard, nnet: torch.nn.Module, runs: int = 500, head_no
             sim_node.back_propagate(eval)
             sim_node.make_children(add_dirichlet(np.array(p_vec)))
 
-    values = np.array([-node.value_score() if node is not None else -np.inf for node in head.children])
+    values = np.array(
+        [-node.value_score() if node is not None else -np.inf for node in head.children]
+    )
     es = np.exp(values)
     values = es / sum(es)
 
     index = np.argmax(values)
-    
+
     tot = time.time() - start
     # print(f"Tot: {tot}, f: {forward_time}, percent = {forward_time/tot*100}%")
     return get_board(head.children[index]), values, index, head.children[index]
@@ -117,7 +123,7 @@ def select(tree: Node) -> Node:
         # this is classic ucb, I think alphazero implements a slightly altered version
         if tree == None:
             return -np.inf
-        
+
         return tree.p * np.sqrt(tree.parent.n) / (tree.n + 1) - tree.value_score()
 
     if tree.children is None or sum(tree.board.legal_moves()) == 0:
@@ -135,6 +141,7 @@ def select(tree: Node) -> Node:
         raise Exception("No max UCB")
 
     return select(favorite_child)
+
 
 def get_board(node: Node) -> BlankBoard:
     if node.board is None:

@@ -106,7 +106,7 @@ class BoardC4(BlankBoard):
             mult = 1 if self.red_move else -1
             return mult * terminal
         return terminal
-    
+
     def __str__(self):
         for row in self.board_matrix.T[::-1]:
             print("|", end="")
