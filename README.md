@@ -14,3 +14,10 @@ P2 - Andy
 V1 - Will
 
 V2 - Elliot
+
+## Efficiency Improvement
+
+Connect Four:
+
+Pre-tree passing: 40 sec/game
+Tree Passing: 
