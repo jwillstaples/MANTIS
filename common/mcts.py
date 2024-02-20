@@ -73,6 +73,10 @@ def mcts(
     start = time.time()
     forward_time = 0
 
+    sf = time.time()
+    p_vec, eval = get_output(head_board, nnet)
+    forward_time += time.time() - sf
+
     if head_node is None:
         head = Node()
         head.board = head_board
@@ -85,10 +89,6 @@ def mcts(
         head.p = None
 
         runs = runs - head_node.n
-
-    sf = time.time()
-    p_vec, eval = get_output(head_board, nnet)
-    forward_time += time.time() - sf
 
     for _ in range(runs):
         sim_node = select(head)
