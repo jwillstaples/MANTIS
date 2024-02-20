@@ -44,7 +44,7 @@ class C4Dataset(Dataset):
         return board, torch.tensor(pi), torch.tensor(z)
 
 
-def play_a_game(net0, net1, mcts_iter, track=True):
+def play_a_game(net0, net1, mcts_iter, track=True, self_play=False):
     board = BoardC4.from_start()
     turn = 0
     boards = []
@@ -54,11 +54,11 @@ def play_a_game(net0, net1, mcts_iter, track=True):
     while board.terminal_eval() == 2:
         if turn == 0:
             move, pi, idx, current_tree = mcts(
-                board, net0, runs=mcts_iter, head_node=current_tree
+                board, net0, runs=mcts_iter, head_node=current_tree if self_play else None
             )
         else:
             move, pi, idx, current_tree = mcts(
-                board, net1, runs=mcts_iter, head_node=current_tree
+                board, net1, runs=mcts_iter, head_node=current_tree if self_play else None
             )
         if track:
             boards.append(board)
@@ -85,7 +85,7 @@ def self_play(generate: int, first: bool, mcts_iter: int):
     net.eval()
     all_data = []
     for _ in tqdm(range(generate), desc="self play..."):
-        data, idxs = play_a_game(net, net, mcts_iter)
+        data, idxs = play_a_game(net, net, mcts_iter, self_play=True)
         all_data.extend(data)
     return net, C4Dataset(all_data), idxs
 
@@ -99,21 +99,21 @@ SAVE_DIR = "data5"
 
 
 def training_loop():
-    MAX_ITERATIONS = 500
-    EPOCHS_PER_ITERATION = 50
-    NUM_GENERATED = 30
-    BATCH_SIZE = 15
-    GAMES_TO_EVAL = 9
-    MCTS_ITER = 500
-    old_exists = False
-
-    # MAX_ITERATIONS = 1
-    # EPOCHS_PER_ITERATION = 1
-    # NUM_GENERATED = 1
-    # BATCH_SIZE = 1
-    # GAMES_TO_EVAL = 1
-    # MCTS_ITER = 50
+    # MAX_ITERATIONS = 500
+    # EPOCHS_PER_ITERATION = 50
+    # NUM_GENERATED = 30
+    # BATCH_SIZE = 15
+    # GAMES_TO_EVAL = 9
+    # MCTS_ITER = 500
     # old_exists = False
+
+    MAX_ITERATIONS = 1
+    EPOCHS_PER_ITERATION = 1
+    NUM_GENERATED = 1
+    BATCH_SIZE = 1
+    GAMES_TO_EVAL = 1
+    MCTS_ITER = 50
+    old_exists = False
 
     for i in range(MAX_ITERATIONS):
         net, dataset, idxs = self_play(NUM_GENERATED, not old_exists, MCTS_ITER)
