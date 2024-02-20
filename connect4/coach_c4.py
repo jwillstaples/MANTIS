@@ -3,6 +3,8 @@
 # FOR GOOGLE COLAB RUNNING
 import sys
 
+from common.pmcts import Parallel_MCTS
+
 # sys.path.append("/content/drive/My Drive/bot")
 # sys.path.append("/content/drive/My Drive/bot/connect4")
 # sys.path.append("/content/drive/My Drive/bot/common")
@@ -65,6 +67,7 @@ def play_a_game(net0, net1, mcts_iter, track=True, self_play=False):
             pis.append(pi)
         board = move
         idxs.append(idx)
+        turn = 1 if turn == 0 else 0
     result = board.terminal_eval()
     if track:
         training_data = []
@@ -81,7 +84,7 @@ def self_play(generate: int, first: bool, mcts_iter: int):
     """
     net = C4Net().to(device)
     if not first:
-        net.load_state_dict(torch.load("old.pt"))
+        net.load_state_dict(torch.load("old.pt", map_location=torch.device(device)))
     net.eval()
     all_data = []
     for _ in tqdm(range(generate), desc="self play..."):
@@ -89,6 +92,57 @@ def self_play(generate: int, first: bool, mcts_iter: int):
         all_data.extend(data)
     return net, C4Dataset(all_data), idxs
 
+def self_play_parallel(generate: int, first: bool, mcts_iter: int):
+    """
+    Returns net, dataset, idxs of a sample game
+    """
+    net = C4Net().to(device)
+    if not first:
+        net.load_state_dict(torch.load("old.pt", map_location=torch.device(device)))
+    net.eval()
+    all_data, idxs = play_games_in_parallel(generate, net, net, mcts_iter, self_play=True)
+    return net, C4Dataset(all_data), idxs
+
+def play_games_in_parallel(num, net0, net1, mcts_iter, self_play=False):
+    games = [BoardC4.from_start() for _ in range(num)] 
+    results = [2 for _ in range(num)] 
+    turn = 0
+
+    boards = [[] for _ in range(num)] # boards[i] is the list of moves from game i
+    pis = [[] for _ in range(num)]
+    idxs = [[] for _ in range(num)]
+    current_trees = [None for _ in range(num)]
+
+    while 2 in results:
+
+        for i in range(num):
+            if results[i] != 2:
+                games[i] = BoardC4.from_start()
+        
+        mcts = Parallel_MCTS(num, net0 if turn == 0 else net1, mcts_iter, games)
+        moves, mpis, midxs, current_trees = mcts.play()
+        turn = 1 if turn == 0 else 0
+        games = moves
+        for i, (move, pi, idx, tree) in enumerate(zip(moves, mpis, midxs, current_trees)):
+            if results[i] == 2:
+                boards[i].append(move)
+                pis[i].append(pi)
+                idxs[i].append(idx)
+                current_trees[i] = tree
+                results[i] = games[i].terminal_eval()
+    
+    t_datas = [[] for _ in range(num)]
+    for i, (result, seq_boards, seq_pis) in enumerate(zip(results, boards, pis)):
+        for j, (board, pi) in enumerate(zip(seq_boards, seq_pis)):
+            reward = result if j % 2 == 0 else -result
+            t_datas[i].append((board, pi, [float(reward)]))
+    
+    training_data = []
+    [training_data.extend(t_data) for t_data in t_datas]
+    
+    ret_idxs = idxs[0]
+
+    return training_data, ret_idxs
 
 def save_idxs(idxs, title="generic.npy"):
     fp = os.path.join(SAVE_DIR, title)
@@ -188,9 +242,15 @@ def training_loop():
 
 
 if __name__ == "__main__":
-    training_loop()
+    # training_loop()
 
-    # net = C4Net()
-    # net.load_state_dict(torch.load("old.pt", map_location='cpu'))
+    net = C4Net()
+    net.load_state_dict(torch.load("old.pt", map_location='cpu'))
 
-    # data, idx = play_a_game(net, net, 500)
+    # play_games_in_parallel(10, net, net, 50)
+    # play_a_game(net, net, 50)
+    net, dataset, idx = self_play_parallel(10, False, 50)
+    print(dataset)
+    print(idx)
+
+    print(dataset.raw_data)
