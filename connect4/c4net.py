@@ -78,19 +78,21 @@ def test2():
     times = 200
 
     st = time.time()
-    for _ in times:
-        N, ch, R, C = 10, 3, 6, 7
+    for _ in range(times):
+        N, ch, R, C = 5000, 3, 6, 7
         rand = torch.randn((N, ch, R, C))
         net = C4Net()
         p, v = net(rand)
     print(f"time: {time.time() - st}")
 
-    st = time.time()
-    times *= 10
-    for _ in times:
-        N, ch, R, C = 1, 3, 6, 7
-        rand = torch.randn((N, ch, R, C))
-        net = C4Net()
-        p, v = net(rand)
-    print(f"time: {time.time() - st}")
+    # st = time.time()
+    # times *= 100
+    # for _ in range(times):
+    #     N, ch, R, C = 1, 3, 6, 7
+    #     rand = torch.randn((N, ch, R, C))
+    #     net = C4Net()
+    #     p, v = net(rand)
+    # print(f"time: {time.time() - st}")
 # test()
+
+test2()
