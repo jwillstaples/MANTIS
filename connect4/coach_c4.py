@@ -55,11 +55,17 @@ def play_a_game(net0, net1, mcts_iter, track=True, self_play=False):
     while board.terminal_eval() == 2:
         if turn == 0:
             move, pi, idx, current_tree = mcts(
-                board, net0, runs=mcts_iter, head_node=current_tree if self_play else None
+                board,
+                net0,
+                runs=mcts_iter,
+                head_node=current_tree if self_play else None,
             )
         else:
             move, pi, idx, current_tree = mcts(
-                board, net1, runs=mcts_iter, head_node=current_tree if self_play else None
+                board,
+                net1,
+                runs=mcts_iter,
+                head_node=current_tree if self_play else None,
             )
         if track:
             boards.append(board)
@@ -91,6 +97,7 @@ def self_play(generate: int, first: bool, mcts_iter: int):
         all_data.extend(data)
     return net, C4Dataset(all_data), idxs
 
+
 def self_play_parallel(generate: int, first: bool, mcts_iter: int):
     """
     Returns net, dataset, idxs of a sample game
@@ -99,31 +106,44 @@ def self_play_parallel(generate: int, first: bool, mcts_iter: int):
     if not first:
         net.load_state_dict(torch.load("old.pt", map_location=torch.device(device)))
     net.eval()
-    all_data, idxs = play_games_in_parallel(generate, net, net, mcts_iter, self_play=True)
+    all_data, idxs = play_games_in_parallel(
+        generate, net, net, mcts_iter, self_play=True
+    )
     return net, C4Dataset(all_data), idxs
 
+
 def play_games_in_parallel(num, net0, net1, mcts_iter, self_play=False):
-    games = [BoardC4.from_start() for _ in range(num)] 
-    results = [2 for _ in range(num)] 
+    games = [BoardC4.from_start() for _ in range(num)]
+    results = [2 for _ in range(num)]
+    finished = [False for _ in range(num)]
     turn = 0
 
-    boards = [[] for _ in range(num)] # boards[i] is the list of moves from game i
+    boards = [[] for _ in range(num)]  # boards[i] is the list of moves from game i
     pis = [[] for _ in range(num)]
     idxs = [[] for _ in range(num)]
     current_trees = [None for _ in range(num)]
     pbar = tqdm(desc="SP - Moves Played", total=100)
     while 2 in results:
-
         for i in range(num):
             if results[i] != 2:
                 games[i] = BoardC4.from_start()
                 current_trees[i] = None
-        
-        mcts = Parallel_MCTS(num, net0 if turn == 0 else net1, mcts_iter, games, current_trees)
+                finished[i] = True
+
+        mcts = Parallel_MCTS(
+            games=num,
+            net=net0 if turn == 0 else net1,
+            runs=mcts_iter,
+            first_boards=games,
+            passed_trees=current_trees,
+            finished_games=finished,
+        )
         moves, mpis, midxs, mcurrent_trees = mcts.play()
         turn = 1 if turn == 0 else 0
         games = moves
-        for i, (move, pi, idx, tree) in enumerate(zip(moves, mpis, midxs, mcurrent_trees)):
+        for i, (move, pi, idx, tree) in enumerate(
+            zip(moves, mpis, midxs, mcurrent_trees)
+        ):
             if results[i] == 2:
                 boards[i].append(move)
                 pis[i].append(pi)
@@ -131,19 +151,20 @@ def play_games_in_parallel(num, net0, net1, mcts_iter, self_play=False):
                 current_trees[i] = tree
                 results[i] = games[i].terminal_eval()
         pbar.update(1)
-    
+
     t_datas = [[] for _ in range(num)]
     for i, (result, seq_boards, seq_pis) in enumerate(zip(results, boards, pis)):
         for j, (board, pi) in enumerate(zip(seq_boards, seq_pis)):
             reward = result if j % 2 == 0 else -result
             t_datas[i].append((board, pi, [float(reward)]))
-    
+
     training_data = []
     [training_data.extend(t_data) for t_data in t_datas]
-    
+
     ret_idxs = idxs[0]
 
     return training_data, ret_idxs
+
 
 def save_idxs(idxs, title="generic.npy"):
     fp = os.path.join(SAVE_DIR, title)
@@ -171,7 +192,9 @@ def training_loop():
     # old_exists = False
 
     for i in range(MAX_ITERATIONS):
-        net, dataset, idxs = self_play_parallel(NUM_GENERATED, not old_exists, MCTS_ITER)
+        net, dataset, idxs = self_play_parallel(
+            NUM_GENERATED, not old_exists, MCTS_ITER
+        )
         save_idxs(idxs, f"sp{i}")
         dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 

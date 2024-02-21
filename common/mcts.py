@@ -53,7 +53,6 @@ def get_output(board: BlankBoard, nnet: torch.nn.Module):  # Optional 7x1, float
 
 
 def add_dirichlet(p_vec: np.ndarray) -> np.ndarray:
-
     epsilon = 0.25  # hyper-parameter for exploration
     noise = np.random.dirichlet(0.03 * np.ones(p_vec.shape))
     return (1 - epsilon) * p_vec + epsilon * noise

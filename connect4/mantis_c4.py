@@ -7,7 +7,6 @@ from common.mcts import mcts
 
 
 class MantisC4(BlankPlayer):
-
     def __init__(self, fp):
         device = "cuda" if torch.cuda.is_available() else "cpu"
 

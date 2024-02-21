@@ -32,8 +32,14 @@ Connect Four:
 
 Pre-tree passing: 40 sec/game
 Tree Passing: 8 sec/game
-Parallel, no tree passing: 9 sec/game
-Parallel, tree passing:
+Parallel, no tree passing: 9 sec / game
+Parallel, tree passing: 7 sec / game
+
+(300 games)
+
+Pre-tree passing: 40 sec/game
+Tree Passing: 8 sec/game
+
 
 ## Checkpoints
 
