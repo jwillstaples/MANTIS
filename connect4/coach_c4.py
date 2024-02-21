@@ -3,8 +3,6 @@
 # FOR GOOGLE COLAB RUNNING
 import sys
 
-from common.pmcts import Parallel_MCTS
-
 # sys.path.append("/content/drive/My Drive/bot")
 # sys.path.append("/content/drive/My Drive/bot/connect4")
 # sys.path.append("/content/drive/My Drive/bot/common")
@@ -13,6 +11,7 @@ sys.path.append("C:\\Users\\xiayi\\Desktop\\1. Duke University Classes\\MANTIS")
 
 from c4net import C4Net
 from common.mcts import mcts
+from common.pmcts import Parallel_MCTS
 
 import torch
 import torch.nn as nn
@@ -112,24 +111,26 @@ def play_games_in_parallel(num, net0, net1, mcts_iter, self_play=False):
     pis = [[] for _ in range(num)]
     idxs = [[] for _ in range(num)]
     current_trees = [None for _ in range(num)]
-
+    pbar = tqdm(desc="SP - Moves Played", total=100)
     while 2 in results:
 
         for i in range(num):
             if results[i] != 2:
                 games[i] = BoardC4.from_start()
+                current_trees[i] = None
         
-        mcts = Parallel_MCTS(num, net0 if turn == 0 else net1, mcts_iter, games)
-        moves, mpis, midxs, current_trees = mcts.play()
+        mcts = Parallel_MCTS(num, net0 if turn == 0 else net1, mcts_iter, games, current_trees)
+        moves, mpis, midxs, mcurrent_trees = mcts.play()
         turn = 1 if turn == 0 else 0
         games = moves
-        for i, (move, pi, idx, tree) in enumerate(zip(moves, mpis, midxs, current_trees)):
+        for i, (move, pi, idx, tree) in enumerate(zip(moves, mpis, midxs, mcurrent_trees)):
             if results[i] == 2:
                 boards[i].append(move)
                 pis[i].append(pi)
                 idxs[i].append(idx)
                 current_trees[i] = tree
                 results[i] = games[i].terminal_eval()
+        pbar.update(1)
     
     t_datas = [[] for _ in range(num)]
     for i, (result, seq_boards, seq_pis) in enumerate(zip(results, boards, pis)):

@@ -27,8 +27,13 @@ Neural Network Input Efficiency:
 * Passing 1 board, 20000 times takes 180 seconds (110 evals/sec)
 
 Connect Four:
+
+(30 games)
+
 Pre-tree passing: 40 sec/game
 Tree Passing: 8 sec/game
+Parallel, no tree passing: 9 sec/game
+Parallel, tree passing:
 
 ## Checkpoints
 

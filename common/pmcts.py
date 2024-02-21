@@ -10,21 +10,31 @@ import time
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 class Parallel_MCTS:
-    def __init__(self, games: int, net: torch.nn.Module, runs: int, first_boards: List[BlankBoard]):
+    def __init__(self, games: int, net: torch.nn.Module, runs: int, first_boards: List[BlankBoard], passed_trees: List[Node]):
         self.net = net
         self.runs = np.array([runs] * games)
-        self.max_runs = runs
         self.board_shape = first_boards[0].to_tensor().shape
         p_vecs, _ = self.parallel_pass(first_boards)
         self.trees = [None] * games
         for i in range(games):
-            node = Node()
-            node.board = first_boards[i]
-            node.make_children(add_dirichlet(np.array(p_vecs[i])))
-            node.n = 0
-            self.trees[i] = node
+            if passed_trees[i] is None:
+                node = Node()
+                node.board = first_boards[i]
+                node.make_children(add_dirichlet(np.array(p_vecs[i])))
+                node.n = 0
+                self.trees[i] = node
+            else:
+                node = passed_trees[i]
+                node.parent = None
+                node.child_index = None
+                node.p = None
+
+                self.runs[i] = self.runs[i] - node.n
+                self.trees[i] = node
 
         self.games = games
+        self.max_runs = max(self.runs)
+    
 
     def to_run(self, i):
         return self.runs[i] > 0
