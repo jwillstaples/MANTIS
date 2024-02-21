@@ -154,24 +154,24 @@ SAVE_DIR = "data5"
 
 
 def training_loop():
-    # MAX_ITERATIONS = 500
-    # EPOCHS_PER_ITERATION = 50
-    # NUM_GENERATED = 30
-    # BATCH_SIZE = 15
-    # GAMES_TO_EVAL = 9
-    # MCTS_ITER = 500
-    # old_exists = False
-
-    MAX_ITERATIONS = 1
-    EPOCHS_PER_ITERATION = 1
-    NUM_GENERATED = 1
-    BATCH_SIZE = 1
-    GAMES_TO_EVAL = 1
-    MCTS_ITER = 50
+    MAX_ITERATIONS = 500
+    EPOCHS_PER_ITERATION = 50
+    NUM_GENERATED = 300
+    BATCH_SIZE = 15
+    GAMES_TO_EVAL = 9
+    MCTS_ITER = 500
     old_exists = False
 
+    # MAX_ITERATIONS = 1
+    # EPOCHS_PER_ITERATION = 1
+    # NUM_GENERATED = 1
+    # BATCH_SIZE = 1
+    # GAMES_TO_EVAL = 1
+    # MCTS_ITER = 50
+    # old_exists = False
+
     for i in range(MAX_ITERATIONS):
-        net, dataset, idxs = self_play(NUM_GENERATED, not old_exists, MCTS_ITER)
+        net, dataset, idxs = self_play_parallel(NUM_GENERATED, not old_exists, MCTS_ITER)
         save_idxs(idxs, f"sp{i}")
         dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
@@ -243,15 +243,15 @@ def training_loop():
 
 
 if __name__ == "__main__":
-    # training_loop()
+    training_loop()
 
-    net = C4Net()
-    net.load_state_dict(torch.load("old.pt", map_location='cpu'))
+    # net = C4Net()
+    # net.load_state_dict(torch.load("old.pt", map_location='cpu'))
 
-    # play_games_in_parallel(10, net, net, 50)
-    # play_a_game(net, net, 50)
-    net, dataset, idx = self_play_parallel(10, False, 50)
-    print(dataset)
-    print(idx)
+    # # play_games_in_parallel(10, net, net, 50)
+    # # play_a_game(net, net, 50)
+    # net, dataset, idx = self_play_parallel(10, False, 50)
+    # print(dataset)
+    # print(idx)
 
-    print(dataset.raw_data)
+    # print(dataset.raw_data)
