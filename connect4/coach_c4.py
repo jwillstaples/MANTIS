@@ -25,6 +25,8 @@ import numpy as np
 
 import os
 
+from multiprocessing import Queue, Process, Value
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -97,6 +99,33 @@ def self_play(generate: int, first: bool, mcts_iter: int):
         all_data.extend(data)
     return net, C4Dataset(all_data), idxs
 
+def parallel_parallel(generate: int, first: bool, mcts_iter: int):
+    net = C4Net().to(device)
+    if not first:
+        net.load_state_dict(torch.load("old.pt", map_location=torch.device(device)))
+    net.eval()
+
+    queue = Queue()
+    stop_sig = Value('i', 0)
+    process = Process(target=pp_wrapper, args=(stop_sig, queue, generate, net, net, mcts_iter, True))
+    process.start()
+
+    all_data, idxs = play_games_in_parallel(
+        generate, net, net, mcts_iter, self_play=True
+    )
+
+    while stop_sig.value == 0: # Unknown where the dead lock is so using value to auto-reliquish
+        continue
+
+    process.join(timeout=1)
+    all_data2 = queue.get()
+    all_data.extend(all_data2)
+    return net, C4Dataset(all_data), idxs
+
+def pp_wrapper(stop_sig, queue, num, net0, net1, mcts_iter, self_play):
+    all_data, _ = play_games_in_parallel(num, net0, net1, mcts_iter, self_play)
+    queue.put(all_data)
+    stop_sig.value =1 
 
 def self_play_parallel(generate: int, first: bool, mcts_iter: int):
     """
@@ -266,7 +295,7 @@ def training_loop():
 
 
 if __name__ == "__main__":
-    training_loop()
+    # training_loop()
 
     # net = C4Net()
     # net.load_state_dict(torch.load("old.pt", map_location='cpu'))
@@ -278,3 +307,5 @@ if __name__ == "__main__":
     # print(idx)
 
     # print(dataset.raw_data)
+
+    parallel_parallel(10, False, 50)
