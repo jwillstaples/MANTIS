@@ -36,12 +36,14 @@ Tree Passing: 8 sec/game
 
 Parallel, no tree passing: 9 sec / game
 Parallel, tree passing: 7 sec / game
+Parallel in Parallel, tree passing 3 sec / game
 45% of the time is GPU forward calls
 
 (300 games)
 
 Pre-tree passing: 40 sec/game
 Parallel, tree passing: 5 sec / game 
+Parallel in Parallel, tree passing: 2.5 sec / game
 
 ## Checkpoints
 

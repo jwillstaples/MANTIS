@@ -99,6 +99,7 @@ def self_play(generate: int, first: bool, mcts_iter: int):
         all_data.extend(data)
     return net, C4Dataset(all_data), idxs
 
+
 def parallel_parallel(generate: int, first: bool, mcts_iter: int):
     net = C4Net().to(device)
     if not first:
@@ -106,15 +107,19 @@ def parallel_parallel(generate: int, first: bool, mcts_iter: int):
     net.eval()
 
     queue = Queue()
-    stop_sig = Value('i', 0)
-    process = Process(target=pp_wrapper, args=(stop_sig, queue, generate, net, net, mcts_iter, True))
+    stop_sig = Value("i", 0)
+    process = Process(
+        target=pp_wrapper, args=(stop_sig, queue, generate, net, net, mcts_iter, True)
+    )
     process.start()
 
     all_data, idxs = play_games_in_parallel(
         generate, net, net, mcts_iter, self_play=True
     )
 
-    while stop_sig.value == 0: # Unknown where the dead lock is so using value to auto-reliquish
+    while (
+        stop_sig.value == 0
+    ):  # Unknown where the dead lock is so using value to auto-reliquish
         continue
 
     process.join(timeout=1)
@@ -122,10 +127,12 @@ def parallel_parallel(generate: int, first: bool, mcts_iter: int):
     all_data.extend(all_data2)
     return net, C4Dataset(all_data), idxs
 
+
 def pp_wrapper(stop_sig, queue, num, net0, net1, mcts_iter, self_play):
     all_data, _ = play_games_in_parallel(num, net0, net1, mcts_iter, self_play)
     queue.put(all_data)
-    stop_sig.value =1 
+    stop_sig.value = 1
+
 
 def self_play_parallel(generate: int, first: bool, mcts_iter: int):
     """
@@ -177,9 +184,15 @@ def play_games_in_parallel(num, net0, net1, mcts_iter, self_play=False):
                 boards[i].append(move)
                 pis[i].append(pi)
                 idxs[i].append(idx)
-                current_trees[i] = tree
+                if self_play:
+                    current_trees[i] = tree
                 results[i] = games[i].terminal_eval()
         pbar.update(1)
+
+    if not self_play:
+        print(results)
+        print(idxs)
+        return results, idxs[0]
 
     t_datas = [[] for _ in range(num)]
     for i, (result, seq_boards, seq_pis) in enumerate(zip(results, boards, pis)):
@@ -200,6 +213,8 @@ def save_idxs(idxs, title="generic.npy"):
     np.save(fp, np.array(idxs))
 
 
+
+
 SAVE_DIR = "data5"
 
 
@@ -214,9 +229,9 @@ def training_loop():
 
     # MAX_ITERATIONS = 1
     # EPOCHS_PER_ITERATION = 1
-    # NUM_GENERATED = 1
+    # NUM_GENERATED = 6
     # BATCH_SIZE = 1
-    # GAMES_TO_EVAL = 1
+    # GAMES_TO_EVAL = 6
     # MCTS_ITER = 50
     # old_exists = False
 
@@ -252,36 +267,9 @@ def training_loop():
         old_net.eval()
         net.eval()
 
-        score = 0
-        res = [0] * 3
-        for j in tqdm(range(GAMES_TO_EVAL), desc="evaluating..."):
-            net0 = net
-            net1 = old_net
-            win = 1
-            if j % 2 == 1:
-                net0 = old_net
-                net1 = net
-                win = -1
+        # score, res = serial_evaluation(GAMES_TO_EVAL, MCTS_ITER, i, net, old_net)
 
-            result, idxs = play_a_game(net0, net1, MCTS_ITER, track=False)
-            score += result * win
-
-            if win == 1:
-                if result == 1:
-                    res[0] += 1
-                if result == 0:
-                    res[1] += 1
-                if result == -1:
-                    res[2] += 1
-            if win == -1:
-                if result == 1:
-                    res[2] += 1
-                if result == 0:
-                    res[1] += 1
-                if result == -1:
-                    res[0] += 1
-
-        save_idxs(idxs, f"e{i}")
+        score, res = parallel_parallel_evaluation(GAMES_TO_EVAL, MCTS_ITER, i, net, old_net)
 
         print(f"Iteration {i} has score {score}: " + "-" * 50)
         print(f"with result w: {res[0]}, d: {res[1]}, l: {res[2]}")
@@ -293,9 +281,88 @@ def training_loop():
         fp = os.path.join(SAVE_DIR, f"net{i}.pt")
         torch.save(net.state_dict(), fp)
 
+def parallel_parallel_evaluation(GAMES_TO_EVAL, MCTS_ITER, i, net, old_net):
+    score = 0
+    res = [0] * 3
+    
+    queue = Queue()
+    stop_signal = Value("i", 0)
+    process = Process(
+        target=parallel_parallel_eval_wrapper, args=(queue, stop_signal, GAMES_TO_EVAL, MCTS_ITER, net, old_net)
+    )
+    process.start()
+
+    w_results, idxs = play_games_in_parallel(GAMES_TO_EVAL // 2, net, old_net, MCTS_ITER, False)
+    while (stop_signal.value == 0):
+        continue
+    process.join(timeout=1)
+    b_results = queue.get()
+
+    for result in w_results:
+        if result == 1:
+            res[0] += 1
+        if result == 0:
+            res[1] += 1
+        if result == -1:
+            res[2] += 1
+        score += result
+    
+    for result in b_results:
+        if result == -1:
+            res[0] += 1
+        if result == 0:
+            res[1] += 1
+        if result == 1:
+            res[2] += 1
+        score -= result
+    save_idxs(idxs, f"e{i}")
+
+    return score, res
+
+    
+
+def parallel_parallel_eval_wrapper(queue, stop_sig, GAMES_TO_EVAL, MCTS_ITER, net, old_net):
+    b_results, _ = play_games_in_parallel(GAMES_TO_EVAL // 2, old_net, net, MCTS_ITER, False)
+    queue.put(b_results)
+    stop_sig.value = 1
+
+
+def serial_evaluation(GAMES_TO_EVAL, MCTS_ITER, i, net, old_net):
+    score = 0
+    res = [0] * 3
+    for j in tqdm(range(GAMES_TO_EVAL), desc="evaluating..."):
+        net0 = net
+        net1 = old_net
+        win = 1
+        if j % 2 == 1:
+            net0 = old_net
+            net1 = net
+            win = -1
+
+        result, idxs = play_a_game(net0, net1, MCTS_ITER, track=False)
+        score += result * win
+
+        if win == 1:
+            if result == 1:
+                res[0] += 1
+            if result == 0:
+                res[1] += 1
+            if result == -1:
+                res[2] += 1
+        if win == -1:
+            if result == 1:
+                res[2] += 1
+            if result == 0:
+                res[1] += 1
+            if result == -1:
+                res[0] += 1
+
+    save_idxs(idxs, f"e{i}")
+    return score,res
+
 
 if __name__ == "__main__":
-    # training_loop()
+    training_loop()
 
     # net = C4Net()
     # net.load_state_dict(torch.load("old.pt", map_location='cpu'))
@@ -308,4 +375,4 @@ if __name__ == "__main__":
 
     # print(dataset.raw_data)
 
-    parallel_parallel(10, False, 50)
+    # parallel_parallel(10, False, 50)
