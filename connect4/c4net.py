@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import torch.nn.init as init
 import time
 
+
 class C4Net(nn.Module):
     def __init__(self):
         super().__init__()
@@ -74,6 +75,7 @@ def test():
     assert v.shape == torch.Size([N, 1])
     print("Works!")
 
+
 def test2():
     times = 200
 
@@ -85,14 +87,15 @@ def test2():
         p, v = net(rand)
     print(f"time: {time.time() - st}")
 
-    # st = time.time()
-    # times *= 100
-    # for _ in range(times):
-    #     N, ch, R, C = 1, 3, 6, 7
-    #     rand = torch.randn((N, ch, R, C))
-    #     net = C4Net()
-    #     p, v = net(rand)
-    # print(f"time: {time.time() - st}")
+    st = time.time()
+    times *= 10
+    for _ in times:
+        N, ch, R, C = 1, 3, 6, 7
+        rand = torch.randn((N, ch, R, C))
+        net = C4Net()
+        p, v = net(rand)
+    print(f"time: {time.time() - st}")
+
 # test()
 
 test2()
