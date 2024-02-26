@@ -16,5 +16,5 @@ class MantisC4(BlankPlayer):
         self.net.eval()
 
     def move(self, board: BoardC4):
-        board, _, _ = mcts(board, self.net)
+        board, _, _, _ = mcts(board, self.net, runs=1000)
         return board
