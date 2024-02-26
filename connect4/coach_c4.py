@@ -222,7 +222,7 @@ SAVE_DIR = "data6"
 def training_loop():
     MAX_ITERATIONS = 1000
     EPOCHS_PER_ITERATION = 50
-    NUM_GENERATED = 300
+    NUM_GENERATED = 200
     BATCH_SIZE = 15
     GAMES_TO_EVAL = 30
     MCTS_ITER = 500
@@ -363,7 +363,7 @@ def serial_evaluation(GAMES_TO_EVAL, MCTS_ITER, i, net, old_net):
 
 
 if __name__ == "__main__":
-    # training_loop()
+    training_loop()
 
     net = C4Net()
     # net.load_state_dict(torch.load("old.pt", map_location='cpu'))
