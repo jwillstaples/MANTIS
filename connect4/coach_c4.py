@@ -114,7 +114,7 @@ def parallel_parallel(generate: int, first: bool, mcts_iter: int):
     process.start()
 
     all_data, idxs = play_games_in_parallel(
-        generate, net, net, mcts_iter, self_play=True
+        generate, net, net, mcts_iter, self_play=True, telemetry=True
     )
 
     while (
@@ -129,6 +129,7 @@ def parallel_parallel(generate: int, first: bool, mcts_iter: int):
 
 
 def pp_wrapper(stop_sig, queue, num, net0, net1, mcts_iter, self_play):
+    print("Parallel Start")
     all_data, _ = play_games_in_parallel(num, net0, net1, mcts_iter, self_play)
     queue.put(all_data)
     stop_sig.value = 1
@@ -148,7 +149,7 @@ def self_play_parallel(generate: int, first: bool, mcts_iter: int):
     return net, C4Dataset(all_data), idxs
 
 
-def play_games_in_parallel(num, net0, net1, mcts_iter, self_play=False):
+def play_games_in_parallel(num, net0, net1, mcts_iter, self_play=False, telemetry=False):
     games = [BoardC4.from_start() for _ in range(num)]
     results = [2 for _ in range(num)]
     finished = [False for _ in range(num)]
@@ -158,7 +159,8 @@ def play_games_in_parallel(num, net0, net1, mcts_iter, self_play=False):
     pis = [[] for _ in range(num)]
     idxs = [[] for _ in range(num)]
     current_trees = [None for _ in range(num)]
-    pbar = tqdm(desc="SP - Moves Played", total=100)
+    if telemetry:
+        pbar = tqdm(desc="SP - Moves Played", total=100)
     while 2 in results:
         for i in range(num):
             if results[i] != 2:
@@ -187,11 +189,10 @@ def play_games_in_parallel(num, net0, net1, mcts_iter, self_play=False):
                 if self_play:
                     current_trees[i] = tree
                 results[i] = games[i].terminal_eval()
-        pbar.update(1)
+        if telemetry:
+            pbar.update(1)
 
     if not self_play:
-        print(results)
-        print(idxs)
         return results, idxs[0]
 
     t_datas = [[] for _ in range(num)]
@@ -215,15 +216,15 @@ def save_idxs(idxs, title="generic.npy"):
 
 
 
-SAVE_DIR = "data5"
+SAVE_DIR = "data6"
 
 
 def training_loop():
-    MAX_ITERATIONS = 500
+    MAX_ITERATIONS = 1000
     EPOCHS_PER_ITERATION = 50
     NUM_GENERATED = 300
     BATCH_SIZE = 15
-    GAMES_TO_EVAL = 9
+    GAMES_TO_EVAL = 30
     MCTS_ITER = 500
     old_exists = False
 
@@ -235,8 +236,8 @@ def training_loop():
     # MCTS_ITER = 50
     # old_exists = False
 
-    for i in range(MAX_ITERATIONS):
-        net, dataset, idxs = self_play_parallel(
+    for i in range(3, MAX_ITERATIONS):
+        net, dataset, idxs = parallel_parallel(
             NUM_GENERATED, not old_exists, MCTS_ITER
         )
         save_idxs(idxs, f"sp{i}")
@@ -292,7 +293,7 @@ def parallel_parallel_evaluation(GAMES_TO_EVAL, MCTS_ITER, i, net, old_net):
     )
     process.start()
 
-    w_results, idxs = play_games_in_parallel(GAMES_TO_EVAL // 2, net, old_net, MCTS_ITER, False)
+    w_results, idxs = play_games_in_parallel(GAMES_TO_EVAL // 2, net, old_net, MCTS_ITER, False, telemetry=True)
     while (stop_signal.value == 0):
         continue
     process.join(timeout=1)

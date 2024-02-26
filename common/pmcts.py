@@ -124,5 +124,5 @@ class Parallel_MCTS:
                     vals[i] = values
                     next_trees[i] = self.trees[i].children[indices[i]]
         et = time.time() - st
-        print(f"Tot: {et}, f: {ppt}, percent = {ppt/et*100}%")
+        # print(f"Tot: {et}, f: {ppt}, percent = {ppt/et*100}%")
         return boards, vals, indices, next_trees
