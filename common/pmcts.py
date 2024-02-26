@@ -20,6 +20,7 @@ class Parallel_MCTS:
         passed_trees: List[Node],
         finished_games: List[bool],
     ):
+        self.first_boards = first_boards
         self.net = net
         self.runs = np.array([runs] * games)
         self.board_shape = first_boards[0].to_tensor().shape
@@ -125,4 +126,4 @@ class Parallel_MCTS:
                     next_trees[i] = self.trees[i].children[indices[i]]
         et = time.time() - st
         # print(f"Tot: {et}, f: {ppt}, percent = {ppt/et*100}%")
-        return boards, vals, indices, next_trees
+        return self.first_boards, boards, vals, indices, next_trees

@@ -176,14 +176,14 @@ def play_games_in_parallel(num, net0, net1, mcts_iter, self_play=False, telemetr
             passed_trees=current_trees,
             finished_games=finished,
         )
-        moves, mpis, midxs, mcurrent_trees = mcts.play()
+        first_boards, moves, mpis, midxs, mcurrent_trees = mcts.play()
         turn = 1 if turn == 0 else 0
         games = moves
-        for i, (move, pi, idx, tree) in enumerate(
-            zip(moves, mpis, midxs, mcurrent_trees)
+        for i, (fb, pi, idx, tree) in enumerate(
+            zip(first_boards, mpis, midxs, mcurrent_trees)
         ):
             if results[i] == 2:
-                boards[i].append(move)
+                boards[i].append(fb)
                 pis[i].append(pi)
                 idxs[i].append(idx)
                 if self_play:
@@ -363,12 +363,21 @@ def serial_evaluation(GAMES_TO_EVAL, MCTS_ITER, i, net, old_net):
 
 
 if __name__ == "__main__":
-    training_loop()
+    # training_loop()
 
-    # net = C4Net()
+    net = C4Net()
     # net.load_state_dict(torch.load("old.pt", map_location='cpu'))
+    training_data, idxs = play_a_game(net, net, 100, self_play=True)
+    # training_data, idxs = play_games_in_parallel(2, net, net, 50, self_play=True, telemetry=True)
+    for d in training_data:
+        board = d[0]
+        p = d[1]
+        reward = d[2]
 
-    # # play_games_in_parallel(10, net, net, 50)
+        print_board(board)
+        print(p)
+        print(reward)
+        print("-" * 50)
     # # play_a_game(net, net, 50)
     # net, dataset, idx = self_play_parallel(10, False, 50)
     # print(dataset)
