@@ -19,7 +19,7 @@ def bot_v_bot():
     # bot = MinimaxC4(depth=4)
     # bot2 = MinimaxC4(depth=4)
 
-    bot = MantisC4("old.pt")
+    bot = MantisC4("old.pt", runs=1000)
     bot2 = MantisC4("data6/net4.pt", True)
     
     print(game_board)
