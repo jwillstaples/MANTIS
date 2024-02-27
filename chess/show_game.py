@@ -2,6 +2,7 @@
 from bitarray.util import pprint
 
 from chess.utils import *
+from chess.precompute import *
 from chess.board_chess import BoardChess
 
 
@@ -54,7 +55,11 @@ if __name__ == '__main__':
     board = BoardChess(white_move=1)
                        
     num_moves = 10
-    # print(board.get_pseudolegal_moves())
-    simulate_human_vs_human(board, num_moves)
+    # simulate_human_vs_human(board, num_moves)
 
-    
+    rook_rays = precompute_rook_rays()
+    occupied = board.occupied_squares
+    # print(lerf_bitboard_to_2D_numpy(occupied))
+
+    potential_blockers = rook_rays['a1'] & occupied
+    print(lerf_bitboard_to_2D_numpy(potential_blockers))

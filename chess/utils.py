@@ -18,6 +18,10 @@ def lerf_bitboard_to_1D_numpy(bitboard):
     return np.array(bitboard.tolist())
 
 
+def lerf_bitboard_to_2D_numpy(bitboard):
+    return lerf_bitboard_to_1D_numpy(bitboard).reshape((8, 8))
+
+
 def pos_idx_to_bitarray(pos_idx, length):
     '''
     So a LERF bitarray has the LSB = 0, but python slicing makes the LSB = 63
