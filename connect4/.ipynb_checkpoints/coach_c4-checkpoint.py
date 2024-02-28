@@ -246,6 +246,7 @@ def training_loop():
     BATCH_SIZE = 15
     GAMES_TO_EVAL = 30
     MCTS_ITER = 500
+    START_ITERATION = 69
     old_exists = True
 
     # MAX_ITERATIONS = 1
@@ -254,9 +255,10 @@ def training_loop():
     # BATCH_SIZE = 1
     # GAMES_TO_EVAL = 6
     # MCTS_ITER = 50
+    # START_ITERATION = 0
     # old_exists = False
 
-    for i in range(13, MAX_ITERATIONS):
+    for i in range(69, MAX_ITERATIONS):
         net, dataset, idxs = parallel_parallel(
             NUM_GENERATED, not old_exists, MCTS_ITER
         )
