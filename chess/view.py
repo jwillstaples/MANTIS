@@ -168,7 +168,7 @@ class ChessGame(arcade.Window):
         counter = 1
         for i in range(0, len(self.board.move_history[-max_rows*2:]), 2):
             move_y = table_y_start - (i // 2 * row_height)
-            arcade.draw_text(f'{counter}.) ', table_x, move_y, (167, 167, 167), 14, anchor_x="left", anchor_y="top", bold=True)
+            arcade.draw_text(f'{counter}. ', table_x, move_y, (167, 167, 167), 14, anchor_x="left", anchor_y="top", bold=True)
 
             move_text = self.board.move_history[i]
             arcade.draw_text(move_text, table_x + move_width, move_y, (167, 167, 167), 14, anchor_x="left", anchor_y="top", bold=True)

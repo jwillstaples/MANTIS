@@ -12,21 +12,77 @@ Note: implemented with for loop logic, could make more efficient with precompute
     c.) Queens
         ii.) Combine rook + bishop precompute tables
 
+2.) Promotion
+
+3.) En passant
+
+---- NEXT -------------------------------------------------------------------------------------------
+
+1.) Legality checks
+    a.) All regular piece moves
+    b.) All sliding piece moves
+    c.) Promotion moves
+    d.) En passant moves
+    
+    e.) IMPLEMENT "CHECKS" = append "+" to very end
+    f.) IMPLEMENT "CHECKMATES" = append "#" to very end
+        i.) If white wins, notated "1-0"
+        ii.) If black wins, notated "0-1"
+        iii.) If a draw, notated "1/2-1/2"
+
+2.) Castling
+    a.) Kingside = "0-0"
+    b.) Queenside = "0-0-0"
+
+3.) Disambiguation
+    a.) If two of the same piece can be moved to the same square,
+        ADD THE FILE that the piece is on before we write the square
+        ex.) Knight on b1 and Knight on f3 can both move to d2
+            Knight on b1 -> Nbd2
+            Knight on f3 -> Nfd2
+            If it was a capture, then
+            Knight on b1 -> Nbxd2
+            Knight on f3 -> Nfxd2
+
+    b.) If two of the same piece can be moved to the same square AND
+        they are both on the same file, then 
+        ADD ONLY THE RANK that each piece is on before writing the square
+        ex.) Knight on f1 and Knight on f3 can both move to d2
+            Knight on f1 -> N1d2
+            Knight on f3 -> N3d2
+            If it was a capture, then
+            Knight on f1 -> N1xd2
+            Knight on f3 -> N3xd2
+
+    c.) Finally, if there's a case where neither file nor rank alone can be used to identify the piece,
+        then we ADD BOTH THE FILE AND THE RANK
+        ex.) Queen on e4, Queen on h4, Queen on h1 can all move to e1
+            Queen on e4 -> Qe4e1
+            Queen on h4 -> Qh4e1
+            Queen on h1 -> Qh1e1
+            If it was a capture, then
+            Queen on e4 -> Qe4xe1
+            Queen on h4 -> Qh4xe1
+            Queen on h1 -> Qh1xe1
+        
+
+
+4.) Dumbass special game rules
+    a.) Draws
+        i.) Stalemate:
+            when the player to move is not in check but has no legal move
+        ii.) Threefold repetition:
+            when the same position occurs three times with the same player to move
+        iii.) Fifth-move rule:
+            when the last 50 successive moves made by each players contain no capture or pawn move
+        iv.) Dead positions / impossible checkmates:
+            when a position arises in which neither player can checkmate the other
+            - king vs king
+            - king vs king and bishop
+            - king vs king and Knight
+            - king and bishop vs king and bishop with the bishops on the same color
+
 -----------------------------------------------------------------------------------------------------
-
-2.) Move encoding
-    a.) Castling rights
-    b.) En passant rules
-    c.) Promotion rules
-    d.) Disambiguation rules in algebraic notation?
-
-3.) Game rules
-    a.) 50-move rule
-    b.) There's another one idk what though
-
-4.) Move generation
-    a.) Legality checks (checking if the king is in check is all that's left I think?)
-        i.) I think you can implement this with the precomputed ray tables
 
 5.) If I had time
     a.) Clean up wtfs going on with indexing/representation
