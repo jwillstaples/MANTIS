@@ -60,7 +60,7 @@ class ChessGame(arcade.Window):
         if self.origin_square:
             self.highlight_origin_square(self.origin_square)
         if self.valid_moves:
-            self.highlight_valid_moves(self.valid_moves)
+            self.highlight_valid_moves(list(self.valid_moves.keys()))
         
         self.draw_annotations()
         self.piece_sprites.draw()
@@ -245,12 +245,12 @@ class ChessGame(arcade.Window):
 
 
     def get_valid_moves(self, filerank):
-        filtered_moves = []
+        filtered_moves = {}
 
         for i, test_move in enumerate(self.board.get_pseudolegal_moves()):
-            origin_square, target_square, _, _ = decode_move(test_move)
+            origin_square, target_square, promotion_piece_type, special_move_flag = decode_move(test_move)
             if pos_idx_to_filerank(origin_square) == filerank:
-                filtered_moves.append(pos_idx_to_filerank(target_square))
+                filtered_moves[pos_idx_to_filerank(target_square)] = special_move_flag
 
         return filtered_moves
     
@@ -314,7 +314,7 @@ class ChessGame(arcade.Window):
                 else:
                     # then, first check if we already have a selected piece and 
                     # if the clicked square is in the valid moves for that piece
-                    if self.origin_square and filerank in self.valid_moves:
+                    if self.origin_square and filerank in self.valid_moves.keys():
                         # if it is, then THAT'S A VALID MOVE BAYBEEEEE
                         self.target_square = filerank
 
@@ -329,6 +329,8 @@ class ChessGame(arcade.Window):
                         # if NOT a promotion move, make the move
                         if self.awaiting_promotion_selection == False:
                             encoded_move = zeros(16, endian='big')
+                            if self.valid_moves[filerank] == 2:
+                                encoded_move[0:2] = int2ba(2, 2, endian='big')
                             encoded_move[4:10] = pos_idx_to_bitarray(filerank_to_pos_idx(self.target_square), length=6)
                             encoded_move[10:16] = pos_idx_to_bitarray(filerank_to_pos_idx(self.origin_square), length=6)
 

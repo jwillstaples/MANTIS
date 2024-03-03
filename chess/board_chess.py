@@ -218,7 +218,6 @@ class BoardChess(BlankBoard):
 
                 algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                 algebraic_notation_move.append(algebraic_target_square)
-                algebraic_notation_move.append(' e.p.')
 
 
         elif self.white_move == -1:
@@ -277,7 +276,6 @@ class BoardChess(BlankBoard):
 
                 algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                 algebraic_notation_move.append(algebraic_target_square)
-                algebraic_notation_move.append(' e.p.')
 
         # update the game state
         self.move_history.append(''.join(algebraic_notation_move))
