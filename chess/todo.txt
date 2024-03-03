@@ -1,0 +1,36 @@
+
+
+1.) Sliding Pieces
+    a.) Rooks
+        i.) Can bitwise AND ray boards with Rank123..7 boards to kinda "block" out halves of the board to get directional rays
+        ii.) Directional rays allow for independence in identifying nearest blockers
+        iii.) Nearest blockers identified via Forward and Reverse bitscan
+    b.) Bishops
+        i.) Diagonal implementation?
+    c.) Queens
+        ii.) Combine rook + bishop precompute tables
+
+2.) Move encoding
+    a.) Castling rights
+    b.) En passant rules
+    c.) Promotion rules
+    d.) Disambiguation rules in algebraic notation?
+
+3.) Game rules
+    a.) 50-move rule
+    b.) There's another one idk what though
+
+4.) Move generation
+    a.) Legality checks (checking if the king is in check is all that's left I think?)
+        i.) I think you can implement this with the precomputed ray tables
+
+5.) If I had time
+    a.) Clean up wtfs going on with indexing/representation
+        i.) Think it would be easier to go with the absolute {file}{rank} representation ngl
+    b.) Encapsulation
+        i.) There's zero shot I can't reduce my amount of code by a at least a gajillion percent
+    c.) Document my fucken functions bc idk what they do anymore either 
+
+6.) Idk
+    a.) FEN encoding/decoding?
+    b.) Perspective swapping?

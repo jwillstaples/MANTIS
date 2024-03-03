@@ -1,7 +1,7 @@
 import numpy as np
 
 from bitarray import bitarray
-from bitarray.util import ba2int, int2ba
+from bitarray.util import ba2int, int2ba, pprint
 
 
 def hex_to_bitarray(hex_string, endian='little'):
@@ -19,7 +19,7 @@ def lerf_bitboard_to_1D_numpy(bitboard):
 
 
 def lerf_bitboard_to_2D_numpy(bitboard):
-    return lerf_bitboard_to_1D_numpy(bitboard).reshape((8, 8))
+    print(lerf_bitboard_to_1D_numpy(bitboard).reshape((8, 8)))
 
 
 def pos_idx_to_bitarray(pos_idx, length):
@@ -88,3 +88,42 @@ def decode_move(move_bitarray):
     origin_square = bitarray_to_pos_idx(move_bitarray[10:16])
     
     return (origin_square, target_square, promotion_piece_type, special_move_flag)
+
+
+def getRookRayAttacks(rook_rays, occupied_squares, dir4, pos_idx):
+    '''
+    rook_rays (bitboard): precomputed 2D array of rook attack rays
+    occupied_squares (bitboard): current game state's occupied squares bitboard
+    dir4 (int): 0 = North, 1 = East, 2 = South, 3 = West
+    pos_idx (int): the pos_idx of the rook's square
+
+    attacks (bitboard): bitboard with 1's for valid moves, considers the nearest blocker an enemy
+    need to mask attacks with friendly pieces bitboard
+    '''
+    attacks = rook_rays[dir4][pos_idx].copy()
+    blocker = attacks & occupied_squares
+    if blocker.any():
+        filerank = pos_idx_to_filerank(pos_idx)
+        file, rank = filerank[0], filerank[1]
+
+        if dir4 == 0: # NORTH
+            start_pos_idx = 0
+            end_pos_idx = pos_idx
+            takelast = True
+        elif dir4 == 1: # EAST
+            start_pos_idx = pos_idx
+            end_pos_idx = (((int(rank) * 8) - 1) ^ 56) + 1
+            takelast = False
+        elif dir4 == 2: # SOUTH
+            start_pos_idx = pos_idx
+            end_pos_idx = 64
+            takelast = False
+        elif dir4 == 3: # WEST
+            start_pos_idx = ((int(rank) - 1) * 8) ^ 56
+            end_pos_idx = pos_idx
+            takelast = True
+            
+        nearest_blocker_pos_idx = blocker.find(1, start_pos_idx, end_pos_idx, takelast)
+        attacks ^= rook_rays[dir4][nearest_blocker_pos_idx]
+    
+    return attacks

@@ -6,6 +6,8 @@ from bitarray.util import zeros, pprint
 
 from common.board import BlankBoard
 from chess.utils import *
+from chess.precompute import precompute_rook_rays
+
 
 class BoardChess(BlankBoard):
     '''
@@ -83,6 +85,9 @@ class BoardChess(BlankBoard):
             '7': hex_to_bitarray('0x00FF000000000000'),
             '8': hex_to_bitarray('0xFF00000000000000'),
         }
+
+        # Initialize sliding piece attack rays
+        self.rook_rays = precompute_rook_rays()
 
         # Initialize game state variables
         self.move_history = []
@@ -252,6 +257,8 @@ class BoardChess(BlankBoard):
                 encoded_moves += self.generate_pseudolegal_knight_moves()
             if len(self.white_king.search(1)) >= 1:
                 encoded_moves += self.generate_pseudolegal_king_moves()
+            if len(self.white_rooks.search(1)) >= 1:
+                encoded_moves += self.generate_pseudolegal_rook_moves()
         elif self.white_move == -1:
             if len(self.black_pawns.search(1)) >= 1:
                 encoded_moves += self.generate_pseudolegal_pawn_moves()
@@ -259,10 +266,57 @@ class BoardChess(BlankBoard):
                 encoded_moves += self.generate_pseudolegal_knight_moves()
             if len(self.black_king.search(1)) >= 1:
                 encoded_moves += self.generate_pseudolegal_king_moves()
+            if len(self.black_rooks.search(1)) >= 1:
+                encoded_moves += self.generate_pseudolegal_rook_moves()
 
         return encoded_moves
 
-    
+
+    def generate_pseudolegal_rook_moves(self):
+        encoded_rook_moves = []
+
+        if self.white_move == 1:
+            for pos_idx in self.white_rooks.search(1):
+                # print(f'pos_idx: {pos_idx}, lerf_idx: {pos_idx ^ 56}')
+                origin_square = pos_idx_to_bitarray(pos_idx, length=6)
+                target_squares = []
+
+                for dir4 in [0, 1, 2, 3]:
+                    rook_attacks = getRookRayAttacks(self.rook_rays, self.occupied_squares, dir4, pos_idx)
+                    for target_pos_idx in rook_attacks.search(1):
+                        if self.white_pieces[target_pos_idx] == 1:
+                            continue
+                        target_squares.append(pos_idx_to_bitarray(target_pos_idx, length=6))
+
+                for target_square in target_squares:
+                    encoded_move = zeros(16, endian='big')
+                    encoded_move[4:10] = target_square
+                    encoded_move[10:16] = origin_square
+                        
+                    encoded_rook_moves.append(encoded_move)
+                
+        elif self.white_move == -1:
+            for pos_idx in self.black_rooks.search(1):
+                origin_square = pos_idx_to_bitarray(pos_idx, length=6)
+                target_squares = []
+
+                for dir4 in [0, 1, 2, 3]:
+                    rook_attacks = getRookRayAttacks(self.rook_rays, self.occupied_squares, dir4, pos_idx)
+                    for target_pos_idx in rook_attacks.search(1):
+                        if self.black_pieces[target_pos_idx] == 1:
+                            continue
+                        target_squares.append(pos_idx_to_bitarray(target_pos_idx, length=6))
+
+                for target_square in target_squares:
+                    encoded_move = zeros(16, endian='big')
+                    encoded_move[4:10] = target_square
+                    encoded_move[10:16] = origin_square
+                        
+                    encoded_rook_moves.append(encoded_move)
+        
+        return encoded_rook_moves
+
+
     def generate_pseudolegal_king_moves(self):
         encoded_king_moves = []
 
@@ -317,11 +371,11 @@ class BoardChess(BlankBoard):
                     target_squares.append(pos_idx_to_bitarray(pos_idx - 9, length=6))
 
 
-            for target_square in target_squares:
+                for target_square in target_squares:
                     encoded_move = zeros(16, endian='big')
                     encoded_move[4:10] = target_square
                     encoded_move[10:16] = origin_square
-                    
+                        
                     encoded_king_moves.append(encoded_move)
 
         elif self.white_move == -1:
@@ -375,12 +429,12 @@ class BoardChess(BlankBoard):
                     target_squares.append(pos_idx_to_bitarray(pos_idx - 9, length=6))
 
 
-            for target_square in target_squares:
-                encoded_move = zeros(16, endian='big')
-                encoded_move[4:10] = target_square
-                encoded_move[10:16] = origin_square
-                    
-                encoded_king_moves.append(encoded_move)
+                for target_square in target_squares:
+                    encoded_move = zeros(16, endian='big')
+                    encoded_move[4:10] = target_square
+                    encoded_move[10:16] = origin_square
+                        
+                    encoded_king_moves.append(encoded_move)
         
         return encoded_king_moves
 
