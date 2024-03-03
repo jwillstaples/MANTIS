@@ -34,6 +34,41 @@ rank_bitboards = {
     '8': hex_to_bitarray('0xFF00000000000000'),
 }
 
+diag_bitboards = {
+    '1': hex_to_bitarray('0x0000000000000080'),
+    '2': hex_to_bitarray('0x0000000000008040'),
+    '3': hex_to_bitarray('0x0000000000804020'),
+    '4': hex_to_bitarray('0x0000000080402010'),
+    '5': hex_to_bitarray('0x0000008040201008'),
+    '6': hex_to_bitarray('0x0000804020100804'),
+    '7': hex_to_bitarray('0x0080402010080402'),
+    '8': hex_to_bitarray('0x8040201008040201'),
+    '9': hex_to_bitarray('0x4020100804020100'),
+    '10': hex_to_bitarray('0x2010080402010000'),
+    '11': hex_to_bitarray('0x1008040201000000'),
+    '12': hex_to_bitarray('0x0804020100000000'),
+    '13': hex_to_bitarray('0x0402010000000000'),
+    '14': hex_to_bitarray('0x0201000000000000'),
+    '15': hex_to_bitarray('0x0100000000000000'),
+}
+
+antidiag_bitboards = {
+    '1': hex_to_bitarray('0x0000000000000001'),
+    '2': hex_to_bitarray('0x0000000000000102'),
+    '3': hex_to_bitarray('0x0000000000010204'),
+    '4': hex_to_bitarray('0x0000000001020408'),
+    '5': hex_to_bitarray('0x0000000102040810'),
+    '6': hex_to_bitarray('0x0000010204081020'),
+    '7': hex_to_bitarray('0x0001020408102040'),
+    '8': hex_to_bitarray('0x0102040810204080'),
+    '9': hex_to_bitarray('0x0204081020408000'),
+    '10': hex_to_bitarray('0x0408102040800000'),
+    '11': hex_to_bitarray('0x0810204080000000'),
+    '12': hex_to_bitarray('0x1020408000000000'),
+    '13': hex_to_bitarray('0x2040800000000000'),
+    '14': hex_to_bitarray('0x4080000000000000'),
+    '15': hex_to_bitarray('0x8000000000000000'),
+}
 
 def precompute_rook_rays():
     # [DIRECTION][SQUARE]
@@ -68,50 +103,58 @@ def precompute_rook_rays():
     return rook_rays
 
 
+def precompute_bishop_rays():
+    # [DIRECTION][SQUARE]
+    # direction: 0 = NORTHWEST, 1 = NORTHEAST, 2 = SOUTHEAST, 3 = SOUTHWEST
+    # square: pos_idx position
+    # little endian: a[0] = LSB, a[max] = MSB
+    bishop_rays = [[zeros(64, endian='little') for _ in range(64)] for _ in range(4)]
+    files = 'abcdefgh'
+    
+    for pos_idx in range(64):
+        filerank = pos_idx_to_filerank(pos_idx)
+        file, rank = filerank[0], filerank[1]
+
+        diag = int(rank) + files.index(file)
+        antidiag = int(rank) - files.index(file) + 7
+
+        diag_idxs = diag_bitboards[str(diag)].search(1) # NW = 0, SE = 2
+        antidiag_idxs = antidiag_bitboards[str(antidiag)].search(1) # NE = 1, SW = 3
+
+        # NORTHWEST
+        northwest_ray = zeros(64, endian='little')
+        northwest_ray[[i for i in diag_idxs if i < pos_idx]] = 1
+        bishop_rays[0][pos_idx] = northwest_ray
+
+        # NORTHEAST
+        northeast_ray = zeros(64, endian='little')
+        northeast_ray[[i for i in antidiag_idxs if i < pos_idx]] = 1
+        bishop_rays[1][pos_idx] = northeast_ray
+
+        # SOUTHEAST
+        southeast_ray = zeros(64, endian='little')
+        southeast_ray[[i for i in diag_idxs if i > pos_idx]] = 1
+        bishop_rays[2][pos_idx] = southeast_ray
+
+        # SOUTHWEST
+        southwest_ray = zeros(64, endian='little')
+        southwest_ray[[i for i in antidiag_idxs if i > pos_idx]] = 1
+        bishop_rays[3][pos_idx] = southwest_ray
+    
+    return bishop_rays
+
+
 if __name__ == '__main__':
-    # POS_IDX:
-    # [56,57,58,59,60,61,62,63], ..., [0,1,2,3,4,5,6,7]
-    rook_rays = precompute_rook_rays()
+    bishop_rays = precompute_bishop_rays()
 
-    # ROOK ON LERF SQUARE = 27, POS_IDX = 35
-    pos_idx = 35
-    lerf_idx = pos_idx ^ 56
-    filerank = pos_idx_to_filerank(pos_idx)
-    file, rank = filerank[0], filerank[1]
+    for pos_idx in range(64):
+        northwest_ray = bishop_rays[0][pos_idx]
+        northeast_ray = bishop_rays[1][pos_idx]
+        southeast_ray = bishop_rays[2][pos_idx]
+        southwest_ray = bishop_rays[3][pos_idx]
 
-    # SET OCCUPIED SQUARES
-    occupied_squares = zeros(64, endian='little')
-    lerf_idx_occupied = [11, 43, 59, 25, 29, 31, 27]
-    pos_idx_occupied = [i ^ 56 for i in lerf_idx_occupied]
-    occupied_squares[pos_idx_occupied] = 1
+        combined = northwest_ray | northeast_ray | southeast_ray | southwest_ray
 
-    print('Occupied Squares')
-    lerf_bitboard_to_2D_numpy(occupied_squares)
-
-    # for pidx in range(64):
-    #     print(f'\n Combined Bitboard for pos_idx: {pidx}, lerf_idx: {pidx ^ 56}')
-    #     combined = rook_rays[0][pidx] | rook_rays[1][pidx] | rook_rays[2][pidx] | rook_rays[3][pidx]
-    #     lerf_bitboard_to_2D_numpy(combined)
-
-    print('\nNorth Attacks')
-    north_attacks = getRookRayAttacks(rook_rays, occupied_squares, 0, pos_idx)
-    lerf_bitboard_to_2D_numpy(north_attacks)
-
-    print('\nSouth Attacks')
-    south_attacks = getRookRayAttacks(rook_rays, occupied_squares, 2, pos_idx)
-    lerf_bitboard_to_2D_numpy(south_attacks)
-
-    print('\nEast Attacks')
-    east_attacks = getRookRayAttacks(rook_rays, occupied_squares, 1, pos_idx)
-    lerf_bitboard_to_2D_numpy(east_attacks)
-
-    print('\nWest Attacks')
-    west_attacks = getRookRayAttacks(rook_rays, occupied_squares, 3, pos_idx)
-    lerf_bitboard_to_2D_numpy(west_attacks)
-
-    print('\nRook Attacks')
-    rook_attacks = north_attacks | south_attacks | east_attacks | west_attacks
-    lerf_bitboard_to_2D_numpy(rook_attacks)
-
-    print(filerank_to_pos_idx('a1'))
-    lerf_bitboard_to_2D_numpy((rook_rays[0][56]))
+        print(f'pos_idx: {pos_idx}, lerf_idx: {pos_idx ^ 56}')
+        lerf_bitboard_to_2D_numpy(combined)
+        print(f'--------------------------------------- \n')

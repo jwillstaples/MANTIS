@@ -6,7 +6,7 @@ from bitarray.util import zeros, pprint
 
 from common.board import BlankBoard
 from chess.utils import *
-from chess.precompute import precompute_rook_rays
+from chess.precompute import precompute_rook_rays, precompute_bishop_rays
 
 
 class BoardChess(BlankBoard):
@@ -63,7 +63,7 @@ class BoardChess(BlankBoard):
         self.occupied_squares = self.white_pieces | self.black_pieces
         self.empty_squares = ~self.occupied_squares
         
-        # Initialize bitboards for ranks and files
+        # Initialize bitboards for ranks, files, diagonals, antidiagonals
         self.file = {
             'a': hex_to_bitarray('0x8080808080808080'), 
             'b': hex_to_bitarray('0x4040404040404040'),
@@ -86,8 +86,45 @@ class BoardChess(BlankBoard):
             '8': hex_to_bitarray('0xFF00000000000000'),
         }
 
+        self.diag_bitboards = {
+            '1': hex_to_bitarray('0x0000000000000080'),
+            '2': hex_to_bitarray('0x0000000000008040'),
+            '3': hex_to_bitarray('0x0000000000804020'),
+            '4': hex_to_bitarray('0x0000000080402010'),
+            '5': hex_to_bitarray('0x0000008040201008'),
+            '6': hex_to_bitarray('0x0000804020100804'),
+            '7': hex_to_bitarray('0x0080402010080402'),
+            '8': hex_to_bitarray('0x8040201008040201'),
+            '9': hex_to_bitarray('0x4020100804020100'),
+            '10': hex_to_bitarray('0x2010080402010000'),
+            '11': hex_to_bitarray('0x1008040201000000'),
+            '12': hex_to_bitarray('0x0804020100000000'),
+            '13': hex_to_bitarray('0x0402010000000000'),
+            '14': hex_to_bitarray('0x0201000000000000'),
+            '15': hex_to_bitarray('0x0100000000000000'),
+        }
+
+        self.antidiag_bitboards = {
+            '1': hex_to_bitarray('0x0000000000000001'),
+            '2': hex_to_bitarray('0x0000000000000102'),
+            '3': hex_to_bitarray('0x0000000000010204'),
+            '4': hex_to_bitarray('0x0000000001020408'),
+            '5': hex_to_bitarray('0x0000000102040810'),
+            '6': hex_to_bitarray('0x0000010204081020'),
+            '7': hex_to_bitarray('0x0001020408102040'),
+            '8': hex_to_bitarray('0x0102040810204080'),
+            '9': hex_to_bitarray('0x0204081020408000'),
+            '10': hex_to_bitarray('0x0408102040800000'),
+            '11': hex_to_bitarray('0x0810204080000000'),
+            '12': hex_to_bitarray('0x1020408000000000'),
+            '13': hex_to_bitarray('0x2040800000000000'),
+            '14': hex_to_bitarray('0x4080000000000000'),
+            '15': hex_to_bitarray('0x8000000000000000'),
+        }
+
         # Initialize sliding piece attack rays
         self.rook_rays = precompute_rook_rays()
+        self.bishop_rays = precompute_bishop_rays()
 
         # Initialize game state variables
         self.move_history = []
@@ -251,25 +288,130 @@ class BoardChess(BlankBoard):
         encoded_moves = []
 
         if self.white_move == 1:
-            if len(self.white_pawns.search(1)) >= 1:
+            if self.white_pawns.any():
                 encoded_moves += self.generate_pseudolegal_pawn_moves()
-            if len(self.white_knights.search(1)) >= 1:
+            if self.white_knights.any():
                 encoded_moves += self.generate_pseudolegal_knight_moves()
-            if len(self.white_king.search(1)) >= 1:
+            if self.white_king.any():
                 encoded_moves += self.generate_pseudolegal_king_moves()
-            if len(self.white_rooks.search(1)) >= 1:
+
+            if self.white_rooks.any():
                 encoded_moves += self.generate_pseudolegal_rook_moves()
+            if self.white_bishops.any():
+                encoded_moves += self.generate_pseudolegal_bishop_moves()
+            if self.white_queens.any():
+                encoded_moves += self.generate_pseudolegal_queen_moves()
+
         elif self.white_move == -1:
-            if len(self.black_pawns.search(1)) >= 1:
+            if self.black_pawns.any():
                 encoded_moves += self.generate_pseudolegal_pawn_moves()
-            if len(self.black_knights.search(1)) >= 1:
+            if self.black_knights.any():
                 encoded_moves += self.generate_pseudolegal_knight_moves()
-            if len(self.black_king.search(1)) >= 1:
+            if self.black_king.any():
                 encoded_moves += self.generate_pseudolegal_king_moves()
-            if len(self.black_rooks.search(1)) >= 1:
+
+            if self.black_rooks.any():
                 encoded_moves += self.generate_pseudolegal_rook_moves()
+            if self.black_bishops.any():
+                encoded_moves += self.generate_pseudolegal_bishop_moves()
+            if self.black_queens.any():
+                encoded_moves += self.generate_pseudolegal_queen_moves()
 
         return encoded_moves
+
+
+    def generate_pseudolegal_queen_moves(self):
+        encoded_queen_moves = []
+
+        if self.white_move == 1:
+            for pos_idx in self.white_queens.search(1):
+                origin_square = pos_idx_to_bitarray(pos_idx, length=6)
+                target_squares = []
+
+                for dir4 in [0, 1, 2, 3]:
+                    line_attacks = getRookRayAttacks(self.rook_rays, self.occupied_squares, dir4, pos_idx)
+                    diag_attacks = getBishopRayAttacks(self.bishop_rays, self.occupied_squares, dir4, pos_idx)
+                    queen_attacks = line_attacks | diag_attacks
+
+                    for target_pos_idx in queen_attacks.search(1):
+                        if self.white_pieces[target_pos_idx] == 1:
+                            continue
+                        target_squares.append(pos_idx_to_bitarray(target_pos_idx, length=6))
+
+                for target_square in target_squares:
+                    encoded_move = zeros(16, endian='big')
+                    encoded_move[4:10] = target_square
+                    encoded_move[10:16] = origin_square
+                        
+                    encoded_queen_moves.append(encoded_move)
+        
+        elif self.white_move == -1:
+            for pos_idx in self.black_queens.search(1):
+                origin_square = pos_idx_to_bitarray(pos_idx, length=6)
+                target_squares = []
+
+                for dir4 in [0, 1, 2, 3]:
+                    line_attacks = getRookRayAttacks(self.rook_rays, self.occupied_squares, dir4, pos_idx)
+                    diag_attacks = getBishopRayAttacks(self.bishop_rays, self.occupied_squares, dir4, pos_idx)
+                    queen_attacks = line_attacks | diag_attacks
+
+                    for target_pos_idx in queen_attacks.search(1):
+                        if self.black_pieces[target_pos_idx] == 1:
+                            continue
+                        target_squares.append(pos_idx_to_bitarray(target_pos_idx, length=6))
+
+                for target_square in target_squares:
+                    encoded_move = zeros(16, endian='big')
+                    encoded_move[4:10] = target_square
+                    encoded_move[10:16] = origin_square
+                        
+                    encoded_queen_moves.append(encoded_move)
+
+        return encoded_queen_moves
+
+
+    def generate_pseudolegal_bishop_moves(self):
+        encoded_bishop_moves = []
+
+        if self.white_move == 1:
+            for pos_idx in self.white_bishops.search(1):
+                origin_square = pos_idx_to_bitarray(pos_idx, length=6)
+                target_squares = []
+
+                for dir4 in [0, 1, 2, 3]:
+                    bishop_attacks = getBishopRayAttacks(self.bishop_rays, self.occupied_squares, dir4, pos_idx)
+                    for target_pos_idx in bishop_attacks.search(1):
+                        if self.white_pieces[target_pos_idx] == 1:
+                            continue
+                        target_squares.append(pos_idx_to_bitarray(target_pos_idx, length=6))
+
+                for target_square in target_squares:
+                    encoded_move = zeros(16, endian='big')
+                    encoded_move[4:10] = target_square
+                    encoded_move[10:16] = origin_square
+                        
+                    encoded_bishop_moves.append(encoded_move)
+        
+        elif self.white_move == -1:
+            for pos_idx in self.black_bishops.search(1):
+                origin_square = pos_idx_to_bitarray(pos_idx, length=6)
+                target_squares = []
+
+                for dir4 in [0, 1, 2, 3]:
+                    bishop_attacks = getBishopRayAttacks(self.bishop_rays, self.occupied_squares, dir4, pos_idx)
+                    for target_pos_idx in bishop_attacks.search(1):
+                        if self.black_pieces[target_pos_idx] == 1:
+                            continue
+                        target_squares.append(pos_idx_to_bitarray(target_pos_idx, length=6))
+
+                for target_square in target_squares:
+                    encoded_move = zeros(16, endian='big')
+                    encoded_move[4:10] = target_square
+                    encoded_move[10:16] = origin_square
+                        
+                    encoded_bishop_moves.append(encoded_move)
+        
+        return encoded_bishop_moves
 
 
     def generate_pseudolegal_rook_moves(self):

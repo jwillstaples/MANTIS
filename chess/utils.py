@@ -127,3 +127,34 @@ def getRookRayAttacks(rook_rays, occupied_squares, dir4, pos_idx):
         attacks ^= rook_rays[dir4][nearest_blocker_pos_idx]
     
     return attacks
+
+def getBishopRayAttacks(bishop_rays, occupied_squares, dir4, pos_idx):
+    '''
+    dir4 (int): 0 = NORTHWEST, 1 = NORTHEAST, 2 = SOUTHEAST, 3 = SOUTHWEST
+    '''
+    attacks = bishop_rays[dir4][pos_idx].copy()
+    blocker = attacks & occupied_squares
+    if blocker.any():
+        #  pos_idx:    0  1  2  3  4  5  6  7   ...   56 57 58 59 60 61 62 63
+        # lerf_idx: [[56,57,58,59,60,61,62,63], ..., [ 0, 1, 2, 3, 4, 5, 6, 7]]
+        if dir4 == 0: # NORTHWEST
+            start_pos_idx = 0
+            end_pos_idx = pos_idx
+            takelast = True
+        elif dir4 == 1: # NORTHEAST
+            start_pos_idx = 0
+            end_pos_idx = pos_idx
+            takelast = True
+        elif dir4 == 2: # SOUTHEAST
+            start_pos_idx = pos_idx
+            end_pos_idx = 64
+            takelast = False
+        elif dir4 == 3: # SOUTHWEST
+            start_pos_idx = pos_idx
+            end_pos_idx = 64
+            takelast = False
+
+        nearest_blocker_pos_idx = blocker.find(1, start_pos_idx, end_pos_idx, takelast)
+        attacks ^= bishop_rays[dir4][nearest_blocker_pos_idx]
+    
+    return attacks
