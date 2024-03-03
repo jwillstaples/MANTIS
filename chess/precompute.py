@@ -1,16 +1,7 @@
-import numpy as np
 
 from chess.utils import *
 
-from bitarray import bitarray
-from bitarray.util import ba2int, int2ba, zeros, ones, pprint
-
-# 11000101 = occupied (the occupied squares bitboard)
-# 00000100 = slider (the sliding piece of interest)
-# 11000001 = occupied - slider (bitwise subtraction)
-
-# 11000101 = occupied
-# 00001000 = 2*slider, i.e., shift the slider one position more significant (left shift by 1)
+from bitarray.util import zeros
 
 file_bitboards = {
     'a': hex_to_bitarray('0x8080808080808080'), 
@@ -143,18 +134,3 @@ def precompute_bishop_rays():
     
     return bishop_rays
 
-
-if __name__ == '__main__':
-    bishop_rays = precompute_bishop_rays()
-
-    for pos_idx in range(64):
-        northwest_ray = bishop_rays[0][pos_idx]
-        northeast_ray = bishop_rays[1][pos_idx]
-        southeast_ray = bishop_rays[2][pos_idx]
-        southwest_ray = bishop_rays[3][pos_idx]
-
-        combined = northwest_ray | northeast_ray | southeast_ray | southwest_ray
-
-        print(f'pos_idx: {pos_idx}, lerf_idx: {pos_idx ^ 56}')
-        lerf_bitboard_to_2D_numpy(combined)
-        print(f'--------------------------------------- \n')

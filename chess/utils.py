@@ -82,8 +82,8 @@ def decode_move(move_bitarray):
     '''
     Given a 16-bit encoded move, decodes it into the bit flags
     '''
-    special_move_flag = move_bitarray[0:2]
-    promotion_piece_type = move_bitarray[2:4]
+    special_move_flag = bitarray_to_pos_idx(move_bitarray[0:2]) ^ 56
+    promotion_piece_type = bitarray_to_pos_idx(move_bitarray[2:4]) ^ 56
     target_square = bitarray_to_pos_idx(move_bitarray[4:10])
     origin_square = bitarray_to_pos_idx(move_bitarray[10:16])
     

@@ -40,10 +40,17 @@ class ChessGame(arcade.Window):
         }
         self.game_state_array = self.board.visualize_current_gamestate()
         self.piece_sprites = arcade.SpriteList()
+        self.promotion_sprites = arcade.SpriteList()
         self.load_pieces()
 
         self.origin_square = None
+        self.target_square = None
+        self.piece_type = None
         self.valid_moves = None
+        self.awaiting_promotion_selection = False
+
+        self.mouse_x = 0
+        self.mouse_y = 0
 
 
     def on_draw(self):
@@ -59,6 +66,11 @@ class ChessGame(arcade.Window):
         self.piece_sprites.draw()
         self.draw_move_history()
 
+        if self.awaiting_promotion_selection:
+            self.draw_promotion_selection()
+            self.draw_promotion_boxes()
+            self.promotion_sprites.draw()
+
 
     def load_pieces(self):
         for rank in range(BOARD_ROWS):
@@ -72,6 +84,76 @@ class ChessGame(arcade.Window):
                         sprite.center_x = file * SQUARE_SIZE + SQUARE_SIZE / 2
                         sprite.center_y = SCREEN_HEIGHT - (rank * SQUARE_SIZE + SQUARE_SIZE / 2) 
                         self.piece_sprites.append(sprite)
+
+
+    def is_mouse_hovering_promotion_sprite(self, sprite, x, y):
+        left = sprite.center_x - sprite.width / 2
+        right = sprite.center_x + sprite.width / 2
+        bottom = sprite.center_y - sprite.height / 2
+        top = sprite.center_y + sprite.height / 2
+
+        return left < x < right and bottom < y < top
+
+
+    def draw_promotion_boxes(self):
+        fill_hover = (40, 40, 40)
+        outline_hover = (24, 24, 24)
+        fill_default = (167, 167, 167)
+        outline_default = (255, 255, 255)
+
+        rook = self.promotion_sprites[0]
+        knight = self.promotion_sprites[1]
+        bishop = self.promotion_sprites[2]
+        queen = self.promotion_sprites[3]
+
+        def draw_boxes_filled(sprite):
+            arcade.draw_rectangle_filled(sprite.center_x, sprite.center_y, sprite.width, sprite.height, fill_hover)
+            arcade.draw_rectangle_outline(sprite.center_x, sprite.center_y, sprite.width, sprite.height, outline_hover, 2)
+
+        def draw_boxes_default(sprite):
+            arcade.draw_rectangle_filled(sprite.center_x, sprite.center_y, sprite.width, sprite.height, fill_default)
+            arcade.draw_rectangle_outline(sprite.center_x, sprite.center_y, sprite.width, sprite.height, outline_default, 2)
+
+        if self.is_mouse_hovering_promotion_sprite(rook, self.mouse_x, self.mouse_y):
+            draw_boxes_filled(rook)
+        else:
+            draw_boxes_default(rook)
+        
+        if self.is_mouse_hovering_promotion_sprite(knight, self.mouse_x, self.mouse_y):
+            draw_boxes_filled(knight)
+        else:
+            draw_boxes_default(knight)
+        
+        if self.is_mouse_hovering_promotion_sprite(bishop, self.mouse_x, self.mouse_y):
+            draw_boxes_filled(bishop)
+        else:
+            draw_boxes_default(bishop)
+        
+        if self.is_mouse_hovering_promotion_sprite(queen, self.mouse_x, self.mouse_y):
+            draw_boxes_filled(queen)
+        else:
+            draw_boxes_default(queen)
+
+
+    def draw_promotion_selection(self):
+        x_pos = 8 * SQUARE_SIZE + 226
+        y_pos = (SCREEN_HEIGHT - 20 ) - 50 - (25 * 20)
+        arcade.draw_lrtb_rectangle_filled(0, 800, SCREEN_HEIGHT, 0, (0, 0, 0, 127))
+        arcade.draw_text(f'Select promotion type:', x_pos, y_pos, (167, 167, 167), 14, anchor_x="right", anchor_y="bottom", bold=True)
+
+        if self.board.white_move == 1:
+            promotion_options = ['R', 'N', 'B', 'Q']
+        elif self.board.white_move == -1:
+            promotion_options = ['r', 'n', 'b', 'q']
+
+        for i, option_name in enumerate(promotion_options):
+            texture = self.textures[option_name]
+            sprite = arcade.Sprite()
+            sprite.texture = texture
+            sprite.scale = 0.03
+            sprite.center_x = (x_pos - (112)) + (62 * (i-1))
+            sprite.center_y = y_pos - 50
+            self.promotion_sprites.append(sprite)
 
 
     def draw_move_history(self):
@@ -107,7 +189,6 @@ class ChessGame(arcade.Window):
         arcade.draw_text(f'{turn} to move', table_x + 130, footer_y, (167, 167, 167), 14, anchor_x="right", anchor_y="bottom", bold=True)
 
 
-
     def draw_annotations(self):
         file_letters = 'abcdefgh'
         for row in range(BOARD_ROWS):
@@ -128,17 +209,6 @@ class ChessGame(arcade.Window):
                 y = row * SQUARE_SIZE
                 color = DARK_COLOR if (row + col) % 2 == 0 else LIGHT_COLOR
                 arcade.draw_rectangle_filled(x + SQUARE_SIZE / 2, y + SQUARE_SIZE / 2, SQUARE_SIZE, SQUARE_SIZE, color)
-                
-
-    def get_valid_moves(self, filerank):
-        filtered_moves = []
-
-        for i, test_move in enumerate(self.board.get_pseudolegal_moves()):
-            origin_square, target_square, _, _ = decode_move(test_move)
-            if pos_idx_to_filerank(origin_square) == filerank:
-                filtered_moves.append(pos_idx_to_filerank(target_square))
-
-        return filtered_moves
 
 
     def highlight_origin_square(self, origin_square):
@@ -167,46 +237,113 @@ class ChessGame(arcade.Window):
             arcade.draw_circle_filled(center_x, center_y, SQUARE_SIZE / 4, arcade.color.GREEN)
 
 
+    def reset_highlight(self):
+        self.origin_square = None
+        self.target_square = None
+        self.piece_type = None
+        self.valid_moves = None
+
+
+    def get_valid_moves(self, filerank):
+        filtered_moves = []
+
+        for i, test_move in enumerate(self.board.get_pseudolegal_moves()):
+            origin_square, target_square, _, _ = decode_move(test_move)
+            if pos_idx_to_filerank(origin_square) == filerank:
+                filtered_moves.append(pos_idx_to_filerank(target_square))
+
+        return filtered_moves
+    
+
     def on_mouse_press(self, x, y, button, modifiers):
         if button == arcade.MOUSE_BUTTON_LEFT:
-            col = x // SQUARE_SIZE
-            row = (SCREEN_HEIGHT - y) // SQUARE_SIZE
 
-            rank = 8 - row
-            file_letters = 'abcdefgh'
-            file = file_letters[col]
+            if self.awaiting_promotion_selection:
+                rook_sprite = self.promotion_sprites[0]
+                knight_sprite = self.promotion_sprites[1]
+                bishop_sprite = self.promotion_sprites[2]
+                queen_sprite = self.promotion_sprites[3]
+                
+                encoded_move = zeros(16, endian='big')
 
-            filerank = file + str(rank)
+                encoded_move[0:2] = int2ba(1, 2, endian='big') # PROMOTION FLAG
 
-            # on mouse click, first check if the clicked square is a selectable piece
-            if self.board.is_piece_selectable(filerank):
-                # if the clicked selectable piece is the one we already have selected, reset highlight
-                if self.origin_square == filerank:
-                    self.origin_square = None
-                    self.valid_moves = None
-                # else, assign the filerank and its valid moves to the class variables
-                else:
-                    self.origin_square = filerank
-                    self.valid_moves = self.get_valid_moves(filerank)
+                if self.is_mouse_hovering_promotion_sprite(rook_sprite, x, y): # CLICKED TYPE ROOK = 0
+                    encoded_move[2:4] = int2ba(0, 2, endian='big')
+                elif self.is_mouse_hovering_promotion_sprite(knight_sprite, x, y): # CLICKED TYPE KNIGHT = 1
+                    encoded_move[2:4] = int2ba(1, 2, endian='big')
+                elif self.is_mouse_hovering_promotion_sprite(bishop_sprite, x, y): # CLICKED TYPE BISHOP = 2
+                    encoded_move[2:4] = int2ba(2, 2, endian='big')
+                elif self.is_mouse_hovering_promotion_sprite(queen_sprite, x, y): # CLICKED TYPE QUEEN = 3
+                    encoded_move[2:4] = int2ba(3, 2, endian='big')
 
-            # if the clicked square is NOT a selectable piece
+                encoded_move[4:10] = pos_idx_to_bitarray(filerank_to_pos_idx(self.target_square), length=6)
+                encoded_move[10:16] = pos_idx_to_bitarray(filerank_to_pos_idx(self.origin_square), length=6)
+                
+                self.awaiting_promotion_selection = False
+                self.promotion_sprites.clear()
+
+                self.board.make_move(encoded_move)
+                self.game_state_array = self.board.visualize_current_gamestate()
+                self.piece_sprites.clear()
+                self.load_pieces()
+                
+                self.reset_highlight()
             else:
-                # then, first check if we already have a selected piece and 
-                # if the clicked square is in the valid moves for that piece
-                if self.origin_square and filerank in self.valid_moves:
-                    # if it is, then THAT'S A VALID MOVE BAYBEEEEE
-                    encoded_move = zeros(16, endian='big')
-                    encoded_move[4:10] = pos_idx_to_bitarray(filerank_to_pos_idx(filerank), length=6)
-                    encoded_move[10:16] = pos_idx_to_bitarray(filerank_to_pos_idx(self.origin_square), length=6)
+                col = x // SQUARE_SIZE
+                row = (SCREEN_HEIGHT - y) // SQUARE_SIZE
 
-                    self.board.make_move(encoded_move)
-                    self.game_state_array = self.board.visualize_current_gamestate()
-                    self.piece_sprites.clear()
-                    self.load_pieces()
+                rank = 8 - row
+                file_letters = 'abcdefgh'
+                file = file_letters[col]
 
-                # reset the selection
-                self.origin_square = None
-                self.valid_moves = None
+                filerank = file + str(rank)
+
+                # on mouse click, first check if the clicked square is a selectable piece
+                if self.board.is_piece_selectable(filerank):
+                    # if the clicked selectable piece is the one we already have selected, reset highlight
+                    if self.origin_square == filerank:
+                        self.reset_highlight()
+                    # else, assign the filerank and its valid moves to the class variables
+                    else:
+                        self.origin_square = filerank
+                        self.piece_type = self.board.get_piece_of_square(filerank_to_pos_idx(filerank))
+                        self.valid_moves = self.get_valid_moves(filerank)
+
+                # if the clicked square is NOT a selectable piece
+                else:
+                    # then, first check if we already have a selected piece and 
+                    # if the clicked square is in the valid moves for that piece
+                    if self.origin_square and filerank in self.valid_moves:
+                        # if it is, then THAT'S A VALID MOVE BAYBEEEEE
+                        self.target_square = filerank
+
+                        # if it IS a promotion move, send to awaiting_promotion_selection logic
+                        if self.board.white_move == 1:
+                            if self.piece_type == 'P' and int(filerank[1]) == 8:
+                                self.awaiting_promotion_selection = True
+                        elif self.board.white_move == -1:
+                            if self.piece_type == 'p' and int(filerank[1]) == 1:
+                                self.awaiting_promotion_selection = True
+                        
+                        # if NOT a promotion move, make the move
+                        if self.awaiting_promotion_selection == False:
+                            encoded_move = zeros(16, endian='big')
+                            encoded_move[4:10] = pos_idx_to_bitarray(filerank_to_pos_idx(self.target_square), length=6)
+                            encoded_move[10:16] = pos_idx_to_bitarray(filerank_to_pos_idx(self.origin_square), length=6)
+
+                            self.board.make_move(encoded_move)
+                            self.game_state_array = self.board.visualize_current_gamestate()
+                            self.piece_sprites.clear()
+                            self.load_pieces()
+
+                    if self.awaiting_promotion_selection == False:
+                        self.reset_highlight()
+    
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        self.mouse_x = x
+        self.mouse_y = y
                 
 
 def main():

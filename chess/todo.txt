@@ -1,5 +1,7 @@
 
+---- DONE -------------------------------------------------------------------------------------------
 
+Note: implemented with for loop logic, could make more efficient with precomputed magic bitboard approach
 1.) Sliding Pieces
     a.) Rooks
         i.) Can bitwise AND ray boards with Rank123..7 boards to kinda "block" out halves of the board to get directional rays
@@ -9,6 +11,8 @@
         i.) Diagonal implementation?
     c.) Queens
         ii.) Combine rook + bishop precompute tables
+
+-----------------------------------------------------------------------------------------------------
 
 2.) Move encoding
     a.) Castling rights

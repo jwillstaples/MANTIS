@@ -15,15 +15,67 @@ def simulate_human_vs_human(board, num_moves):
 
         # PRINT CURRENT GAME STATE'S AVAILABLE PAWN MOVES
         if board.white_move == 1:
-            print('\nAvailable Pawn Moves for White (format = (piece, origin, target))')
+            print('\nAvailable Moves for White (format = origin -> target)')
         elif board.white_move == -1:
-            print('\nAvailable Pawn Moves for Black (format = (piece, origin, target))')
+            print('\nAvailable Moves for Black (format = origin -> target)')
         
         encoded_moves = board.get_pseudolegal_moves()
         for i, test_move in enumerate(encoded_moves):
             origin_square, target_square, promotion_piece_type, special_move_flag = decode_move(test_move)
-            # print(origin_square, target_square)
-            print(f'Input [{i}] - ({board.get_piece_of_square(origin_square)}, {pos_idx_to_filerank(origin_square)}, {pos_idx_to_filerank(target_square)})')
+
+            piece_type = board.get_piece_of_square(origin_square)
+
+            prior = []
+            algebraic_notation_move = []
+            if piece_type != 'P' and piece_type != 'p':
+                prior.append(piece_type)
+                algebraic_notation_move.append(piece_type)
+            algebraic_origin_square = pos_idx_to_filerank(origin_square)
+            algebraic_target_square = pos_idx_to_filerank(target_square)
+            prior.append(algebraic_origin_square)
+
+            if board.white_move == 1:
+                target_bitboard = board.get_bitboard_of_square(target_square)
+                
+                if target_bitboard in board.black_piece_bitboards.values(): 
+                    if piece_type == 'P':
+                        algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
+                    else:
+                        algebraic_notation_move.append('x')
+                    
+                algebraic_notation_move.append(algebraic_target_square)
+
+                if special_move_flag == 1: # PROMOTION
+                    if promotion_piece_type == 0:
+                        algebraic_notation_move.append('=R')
+                    elif promotion_piece_type == 1:
+                        algebraic_notation_move.append('=N')
+                    elif promotion_piece_type == 2:
+                        algebraic_notation_move.append('=B')
+                    elif promotion_piece_type == 3:
+                        algebraic_notation_move.append('=Q')
+            elif board.white_move == -1:
+                target_bitboard = board.get_bitboard_of_square(target_square)
+                
+                if target_bitboard in board.white_piece_bitboards.values(): 
+                    if piece_type == 'p':
+                        algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
+                    else:
+                        algebraic_notation_move.append('x')
+                    
+                algebraic_notation_move.append(algebraic_target_square)
+
+                if special_move_flag == 1: # PROMOTION
+                    if promotion_piece_type == 0:
+                        algebraic_notation_move.append('=r')
+                    elif promotion_piece_type == 1:
+                        algebraic_notation_move.append('=n')
+                    elif promotion_piece_type == 2:
+                        algebraic_notation_move.append('=b')
+                    elif promotion_piece_type == 3:
+                        algebraic_notation_move.append('=q')
+
+            print(f'Input [{i:>2}] - {"".join(prior)} -> {"".join(algebraic_notation_move)}')
         
         # SELECT AN INDEX 
         while True:
@@ -54,7 +106,7 @@ def simulate_human_vs_human(board, num_moves):
 if __name__ == '__main__':
     board = BoardChess(white_move=1)
                        
-    num_moves = 10
+    num_moves = 100
     simulate_human_vs_human(board, num_moves)
 
     # rook_rays = precompute_rook_rays()

@@ -2,7 +2,7 @@
 import numpy as np
 
 from prettytable import PrettyTable
-from bitarray.util import zeros, pprint
+from bitarray.util import zeros
 
 from common.board import BlankBoard
 from chess.utils import *
@@ -136,8 +136,17 @@ class BoardChess(BlankBoard):
     def make_move(self, encoded_move):
         '''
         encoded_move: LEGAL encoded move bitarray
+        - Move Representation: 16-bit bitarray representation
+            - Bits   0-5: LERF Destination Square (0 - 63)
+            - Bits  6-11: LERF Origin Square (0 - 63)
+            - Bits 12-13: Promotion piece type (00 = Rook, 01 = Knight, 10 = Bishop, 11 = Queen)
+            - Bits 14-15: Special move flag (01 = promotion, 10 = en passant, 11 = castling)
+        Can add to move list for every combination for last two flags IF applicable
+        i.e., pawn is going from second to last to last rank or whatever the fuck castling rules are
+        need to make a method to obtain set of legal moves also
         '''
         origin_square, target_square, promotion_piece_type, special_move_flag = decode_move(encoded_move)
+        print(f'MOVE CHOSEN: LERF origin = {origin_square ^ 56}, LERF target = {target_square ^ 56}, promo piece = {promotion_piece_type}, special = {special_move_flag}')
         
         piece_type = self.get_piece_of_square(origin_square)
         
@@ -168,8 +177,25 @@ class BoardChess(BlankBoard):
                 
             # Finally, set the val of the piece type bitboard at idx target_square = 1
             # represents the piece moving onto target_square
-            origin_bitboard[target_square] = 1
             algebraic_notation_move.append(algebraic_target_square)
+
+            if special_move_flag == 1: # PROMOTION
+                if promotion_piece_type == 0:
+                    self.white_rooks[target_square] = 1
+                    algebraic_notation_move.append('=R')
+                elif promotion_piece_type == 1:
+                    self.white_knights[target_square] = 1
+                    algebraic_notation_move.append('=N')
+                elif promotion_piece_type == 2:
+                    self.white_bishops[target_square] = 1
+                    algebraic_notation_move.append('=B')
+                elif promotion_piece_type == 3:
+                    self.white_queens[target_square] = 1
+                    algebraic_notation_move.append('=Q')
+
+            if special_move_flag == 0: # NOTHING
+                origin_bitboard[target_square] = 1
+
         
         elif self.white_move == -1:
             origin_bitboard = self.black_piece_bitboards[piece_type]
@@ -184,8 +210,24 @@ class BoardChess(BlankBoard):
                 else:
                     algebraic_notation_move.append('x')
                 
-            origin_bitboard[target_square] = 1
             algebraic_notation_move.append(algebraic_target_square)
+
+            if special_move_flag == 1: # PROMOTION
+                if promotion_piece_type == 0:
+                    self.black_rooks[target_square] = 1
+                    algebraic_notation_move.append('=r')
+                elif promotion_piece_type == 1:
+                    self.black_knights[target_square] = 1
+                    algebraic_notation_move.append('=n')
+                elif promotion_piece_type == 2:
+                    self.black_bishops[target_square] = 1
+                    algebraic_notation_move.append('=b')
+                elif promotion_piece_type == 3:
+                    self.black_queens[target_square] = 1
+                    algebraic_notation_move.append('=q')
+
+            if special_move_flag == 0: # NOTHING
+                origin_bitboard[target_square] = 1
         
         # update the game state
         self.move_history.append(''.join(algebraic_notation_move))
@@ -705,11 +747,21 @@ class BoardChess(BlankBoard):
                         target_squares.append(pos_idx_to_bitarray(pos_idx - 7, length=6))
                 
                 for target_square in target_squares:
-                    encoded_move = zeros(16, endian='big')
-                    encoded_move[4:10] = target_square
-                    encoded_move[10:16] = origin_square
-                    
-                    encoded_pawn_moves.append(encoded_move)
+                    # ENCODE PROMOTION MOVES
+                    if (bitarray_to_pos_idx(target_square) in range(0, 8)):
+                        for i in range(0, 4):  # Loop over promotion piece types
+                            encoded_move = zeros(16, endian='big')
+                            encoded_move[0:2] = int2ba(1, 2, endian='big')  # PROMOTION FLAG
+                            encoded_move[2:4] = int2ba(i, 2, endian='big')  # PROMOTION PIECE TYPE FLAG
+                            encoded_move[4:10] = target_square
+                            encoded_move[10:16] = origin_square
+                            encoded_pawn_moves.append(encoded_move)
+                    # ENCODE NON-PROMOTION MOVES
+                    else:
+                        encoded_move = zeros(16, endian='big')
+                        encoded_move[4:10] = target_square
+                        encoded_move[10:16] = origin_square
+                        encoded_pawn_moves.append(encoded_move)
                     
         elif self.white_move == -1:
             for pos_idx in self.black_pawns.search(1):
@@ -731,11 +783,21 @@ class BoardChess(BlankBoard):
                         target_squares.append(pos_idx_to_bitarray(pos_idx + 9, length=6))
 
                 for target_square in target_squares:
-                    encoded_move = zeros(16, endian='big')
-                    encoded_move[4:10] = target_square
-                    encoded_move[10:16] = origin_square
-                    
-                    encoded_pawn_moves.append(encoded_move)
+                    # ENCODE PROMOTION MOVES
+                    if (bitarray_to_pos_idx(target_square) in range(56, 64)):
+                        for i in range(0, 4):  # Loop over promotion piece types
+                            encoded_move = zeros(16, endian='big')
+                            encoded_move[0:2] = int2ba(1, 2, endian='big')  # PROMOTION FLAG
+                            encoded_move[2:4] = int2ba(i, 2, endian='big')  # PROMOTION PIECE TYPE FLAG
+                            encoded_move[4:10] = target_square
+                            encoded_move[10:16] = origin_square
+                            encoded_pawn_moves.append(encoded_move)
+                    # ENCODE NON-PROMOTION MOVES
+                    else:
+                        encoded_move = zeros(16, endian='big')
+                        encoded_move[4:10] = target_square
+                        encoded_move[10:16] = origin_square
+                        encoded_pawn_moves.append(encoded_move)
                     
         return encoded_pawn_moves
     
