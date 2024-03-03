@@ -43,9 +43,12 @@ def simulate_human_vs_human(board, num_moves):
                     else:
                         algebraic_notation_move.append('x')
                     
-                algebraic_notation_move.append(algebraic_target_square)
+                # HANDLE SPECIAL FLAGS
+                if special_move_flag == 0: # REGULAR MOVE
+                    algebraic_notation_move.append(algebraic_target_square)
 
-                if special_move_flag == 1: # PROMOTION
+                elif special_move_flag == 1: # PROMOTION MOVE
+                    algebraic_notation_move.append(algebraic_target_square)
                     if promotion_piece_type == 0:
                         algebraic_notation_move.append('=R')
                     elif promotion_piece_type == 1:
@@ -54,6 +57,12 @@ def simulate_human_vs_human(board, num_moves):
                         algebraic_notation_move.append('=B')
                     elif promotion_piece_type == 3:
                         algebraic_notation_move.append('=Q')
+                
+                elif special_move_flag == 2: # EN PASSANT MOVE, BLACK CAPTURES WHITE
+                    algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
+                    algebraic_notation_move.append(algebraic_target_square)
+                    algebraic_notation_move.append(' e.p.')
+
             elif board.white_move == -1:
                 target_bitboard = board.get_bitboard_of_square(target_square)
                 
@@ -63,9 +72,12 @@ def simulate_human_vs_human(board, num_moves):
                     else:
                         algebraic_notation_move.append('x')
                     
-                algebraic_notation_move.append(algebraic_target_square)
+                # HANDLE SPECIAL FLAGS
+                if special_move_flag == 0: # REGULAR MOVE
+                    algebraic_notation_move.append(algebraic_target_square)
 
-                if special_move_flag == 1: # PROMOTION
+                elif special_move_flag == 1: # PROMOTION MOVE
+                    algebraic_notation_move.append(algebraic_target_square)
                     if promotion_piece_type == 0:
                         algebraic_notation_move.append('=r')
                     elif promotion_piece_type == 1:
@@ -74,6 +86,11 @@ def simulate_human_vs_human(board, num_moves):
                         algebraic_notation_move.append('=b')
                     elif promotion_piece_type == 3:
                         algebraic_notation_move.append('=q')
+                
+                elif special_move_flag == 2: # EN PASSANT MOVE, BLACK CAPTURES WHITE
+                    algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
+                    algebraic_notation_move.append(algebraic_target_square)
+                    algebraic_notation_move.append(' e.p.')
 
             print(f'Input [{i:>2}] - {"".join(prior)} -> {"".join(algebraic_notation_move)}')
         

@@ -130,6 +130,7 @@ class BoardChess(BlankBoard):
         self.move_history = []
         self.white_move = white_move # 1 = White's move, -1 = Black's move
         self.turn_counter = 0
+        self.en_passant_target_pos_idx = -1
     
 
     # ----------------------------------- BOARD UPDATE METHODS ------------------------------------------------------------------------------------------------------
@@ -174,12 +175,27 @@ class BoardChess(BlankBoard):
                 else:
                     algebraic_notation_move.append('x')
                 
-                
-            # Finally, set the val of the piece type bitboard at idx target_square = 1
-            # represents the piece moving onto target_square
-            algebraic_notation_move.append(algebraic_target_square)
+            # CHECK IF MOVE OPENS WHITE UP TO GETTING EN PASSANT'ED
+            if (
+                (piece_type == 'P') and 
+                (int(algebraic_target_square[1]) - int(algebraic_origin_square[1]) == 2)
+            ):
+                en_passant_target_file = algebraic_origin_square[0]
+                en_passant_target_rank = str(int(algebraic_origin_square[1]) + 1)
+                en_passant_target_filerank = en_passant_target_file + en_passant_target_rank
+                self.en_passant_target_pos_idx = filerank_to_pos_idx(en_passant_target_filerank)
+            # OTHERWISE, RESET BLACK'S POTENTIAL EN PASSANT TARGET POS IDX
+            else:
+                self.en_passant_target_pos_idx = -1
 
-            if special_move_flag == 1: # PROMOTION
+
+            # HANDLE SPECIAL FLAGS
+            if special_move_flag == 0: # REGULAR MOVE
+                origin_bitboard[target_square] = 1
+                algebraic_notation_move.append(algebraic_target_square)
+            
+            elif special_move_flag == 1: # PROMOTION MOVE
+                algebraic_notation_move.append(algebraic_target_square)
                 if promotion_piece_type == 0:
                     self.white_rooks[target_square] = 1
                     algebraic_notation_move.append('=R')
@@ -193,10 +209,18 @@ class BoardChess(BlankBoard):
                     self.white_queens[target_square] = 1
                     algebraic_notation_move.append('=Q')
 
-            if special_move_flag == 0: # NOTHING
+            elif special_move_flag == 2: # EN PASSANT MOVE, WHITE CAPTURES BLACK
                 origin_bitboard[target_square] = 1
 
-        
+                file_t, rank_t = algebraic_target_square[0], algebraic_target_square[1]
+                target_pawn = file_t + str(int(rank_t) - 1)
+                self.black_pawns[filerank_to_pos_idx(target_pawn)] = 0
+
+                algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
+                algebraic_notation_move.append(algebraic_target_square)
+                algebraic_notation_move.append(' e.p.')
+
+
         elif self.white_move == -1:
             origin_bitboard = self.black_piece_bitboards[piece_type]
             target_bitboard = self.get_bitboard_of_square(target_square)
@@ -209,10 +233,28 @@ class BoardChess(BlankBoard):
                     algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                 else:
                     algebraic_notation_move.append('x')
-                
-            algebraic_notation_move.append(algebraic_target_square)
 
-            if special_move_flag == 1: # PROMOTION
+            # CHECK IF MOVE OPENS BLACK UP TO GETTING EN PASSANT'ED
+            if (
+                (piece_type == 'p') and 
+                (int(algebraic_origin_square[1]) - int(algebraic_target_square[1]) == 2)
+            ):
+                en_passant_target_file = algebraic_origin_square[0]
+                en_passant_target_rank = str(int(algebraic_origin_square[1]) - 1)
+                en_passant_target_filerank = en_passant_target_file + en_passant_target_rank
+                self.en_passant_target_pos_idx = filerank_to_pos_idx(en_passant_target_filerank)
+            # OTHERWISE, RESET WHITE'S POTENTIAL EN PASSANT TARGET POS IDX
+            else:
+                self.en_passant_target_pos_idx = -1
+
+
+            # HANDLE SPECIAL FLAGS
+            if special_move_flag == 0: # REGULAR MOVE
+                origin_bitboard[target_square] = 1
+                algebraic_notation_move.append(algebraic_target_square)
+
+            elif special_move_flag == 1: # PROMOTION MOVE
+                algebraic_notation_move.append(algebraic_target_square)
                 if promotion_piece_type == 0:
                     self.black_rooks[target_square] = 1
                     algebraic_notation_move.append('=r')
@@ -225,10 +267,18 @@ class BoardChess(BlankBoard):
                 elif promotion_piece_type == 3:
                     self.black_queens[target_square] = 1
                     algebraic_notation_move.append('=q')
-
-            if special_move_flag == 0: # NOTHING
+            
+            elif special_move_flag == 2: # EN PASSANT MOVE, BLACK CAPTURES WHITE
                 origin_bitboard[target_square] = 1
-        
+
+                file_t, rank_t = algebraic_target_square[0], algebraic_target_square[1]
+                target_pawn = file_t + str(int(rank_t) + 1)
+                self.white_pawns[filerank_to_pos_idx(target_pawn)] = 0
+
+                algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
+                algebraic_notation_move.append(algebraic_target_square)
+                algebraic_notation_move.append(' e.p.')
+
         # update the game state
         self.move_history.append(''.join(algebraic_notation_move))
         self.update_gamestate()
@@ -725,12 +775,16 @@ class BoardChess(BlankBoard):
             - Bits 14-15: Special move flag (01 = promotion, 10 = en passant, 11 = castling)
         '''
         encoded_pawn_moves = []
+        files = 'abcdefgh'
         
         # Loop through indices that white_pawns == 1
         if self.white_move == 1:
             for pos_idx in self.white_pawns.search(1):
                 origin_square = pos_idx_to_bitarray(pos_idx, length=6)
                 target_squares = []
+
+                filerank = pos_idx_to_filerank(pos_idx)
+                file, rank = filerank[0], filerank[1]
                 
                 if ~self.rank['8'][pos_idx]: 
                     # QUIET MOVE LOGIC
@@ -746,12 +800,30 @@ class BoardChess(BlankBoard):
                     if not self.file['h'][pos_idx] and self.black_pieces[pos_idx - 7]: # RIGHT CAPTURE
                         target_squares.append(pos_idx_to_bitarray(pos_idx - 7, length=6))
                 
+                # EN PASSANT LOGIC, en_passant_target_pos_idx = en passant target square of black pawn
+                if self.en_passant_target_pos_idx != -1:
+                    filerank_target = pos_idx_to_filerank(self.en_passant_target_pos_idx)
+                    file_t, rank_t = filerank_target[0], filerank_target[1]
+                    
+                    is_adjacent = (abs(files.index(file) - files.index(file_t)) == 1)
+
+                    if (
+                        (int(rank) == (int(rank_t) - 1)) and # check for same rank
+                        (is_adjacent == True) # check for adjacent file
+                    ): 
+                        encoded_move = zeros(16, endian='big')
+                        encoded_move[0:2] = int2ba(2, 2, endian='big') # EN PASSANT FLAG = 10
+                        encoded_move[4:10] = pos_idx_to_bitarray(self.en_passant_target_pos_idx, length=6)
+                        encoded_move[10:16] = origin_square
+                        encoded_pawn_moves.append(encoded_move)
+
+                # REGULAR MOVE GEN LOGIC
                 for target_square in target_squares:
                     # ENCODE PROMOTION MOVES
                     if (bitarray_to_pos_idx(target_square) in range(0, 8)):
                         for i in range(0, 4):  # Loop over promotion piece types
                             encoded_move = zeros(16, endian='big')
-                            encoded_move[0:2] = int2ba(1, 2, endian='big')  # PROMOTION FLAG
+                            encoded_move[0:2] = int2ba(1, 2, endian='big')  # PROMOTION FLAG = 01
                             encoded_move[2:4] = int2ba(i, 2, endian='big')  # PROMOTION PIECE TYPE FLAG
                             encoded_move[4:10] = target_square
                             encoded_move[10:16] = origin_square
@@ -768,6 +840,9 @@ class BoardChess(BlankBoard):
                 origin_square = pos_idx_to_bitarray(pos_idx, length=6)
                 target_squares = []
 
+                filerank = pos_idx_to_filerank(pos_idx)
+                file, rank = filerank[0], filerank[1]
+
                 if not self.rank['1'][pos_idx]: 
                     # QUIET MOVE LOGIC
                     if self.empty_squares[pos_idx + 8]: # SINGLE STEP
@@ -782,12 +857,30 @@ class BoardChess(BlankBoard):
                     if not self.file['h'][pos_idx] and self.white_pieces[pos_idx + 9]: # RIGHT CAPTURE
                         target_squares.append(pos_idx_to_bitarray(pos_idx + 9, length=6))
 
+                # EN PASSANT LOGIC, en_passant_target_pos_idx = en passant target square of white pawn
+                if self.en_passant_target_pos_idx != -1:
+                    filerank_target = pos_idx_to_filerank(self.en_passant_target_pos_idx)
+                    file_t, rank_t = filerank_target[0], filerank_target[1]
+                    
+                    is_adjacent = (abs(files.index(file) - files.index(file_t)) == 1)
+
+                    if (
+                        (int(rank) == (int(rank_t) + 1)) and # check for same rank
+                        (is_adjacent == True) # check for adjacent file
+                    ): 
+                        encoded_move = zeros(16, endian='big')
+                        encoded_move[0:2] = int2ba(2, 2, endian='big') # EN PASSANT FLAG = 10
+                        encoded_move[4:10] = pos_idx_to_bitarray(self.en_passant_target_pos_idx, length=6)
+                        encoded_move[10:16] = origin_square
+                        encoded_pawn_moves.append(encoded_move)
+
+                # REGULAR MOVE GEN LOGIC
                 for target_square in target_squares:
                     # ENCODE PROMOTION MOVES
                     if (bitarray_to_pos_idx(target_square) in range(56, 64)):
                         for i in range(0, 4):  # Loop over promotion piece types
                             encoded_move = zeros(16, endian='big')
-                            encoded_move[0:2] = int2ba(1, 2, endian='big')  # PROMOTION FLAG
+                            encoded_move[0:2] = int2ba(1, 2, endian='big')  # PROMOTION FLAG = 01
                             encoded_move[2:4] = int2ba(i, 2, endian='big')  # PROMOTION PIECE TYPE FLAG
                             encoded_move[4:10] = target_square
                             encoded_move[10:16] = origin_square
