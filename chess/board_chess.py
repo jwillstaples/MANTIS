@@ -134,6 +134,11 @@ class BoardChess(BlankBoard):
         self.white_move = white_move # 1 = White's move, -1 = Black's move
         self.turn_counter = 0
         self.en_passant_target_pos_idx = -1
+
+        self.in_check = False
+        self.no_moves_left = False
+        self.checkmate = False
+        self.game_over = False
     
 
     # ----------------------------------- BOARD UPDATE METHODS ------------------------------------------------------------------------------------------------------
@@ -221,7 +226,10 @@ class BoardChess(BlankBoard):
 
                 algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                 algebraic_notation_move.append(algebraic_target_square)
-
+            
+            # threaten_bitboard = self.get_attack_ray_of_target_square(target_square, piece_type)
+            # if threaten_bitboard[self.black_king.search(1)[0]] == 1:
+            #     algebraic_notation_move.append('+')
 
         elif self.white_move == -1:
             origin_bitboard = self.black_piece_bitboards[piece_type]
@@ -280,9 +288,66 @@ class BoardChess(BlankBoard):
                 algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                 algebraic_notation_move.append(algebraic_target_square)
 
-        # update the game state
-        self.move_history.append(''.join(algebraic_notation_move))
+
+            # threaten_bitboard = self.get_attack_ray_of_target_square(target_square, piece_type)
+            # if threaten_bitboard[self.white_king.search(1)[0]] == 1:
+            #     algebraic_notation_move.append('+')
+
+
+        # UPDATE THE GAME STATE AND CHECK FOR CONDITIONS
         self.update_gamestate()
+
+        game_score = ''
+        next_moves = self.get_legal_moves()
+        if len(next_moves) == 0:
+            self.no_moves_left = True
+        else:
+            self.no_moves_left = False
+
+        if self.white_move == 1:
+            self.in_check = False
+            king_pos = self.white_king.search(1)[0]
+            enemy_attackers_of_king = self.get_attackers_of_target_square(king_pos)
+            for pidx in enemy_attackers_of_king.search(1):
+                if self.white_pieces[pidx] == 1:
+                    enemy_attackers_of_king[pidx] = 0
+                elif pidx == target_square:
+                    self.in_check = True
+        elif self.white_move == -1:
+            self.in_check = False
+            king_pos = self.black_king.search(1)[0]
+            enemy_attackers_of_king = self.get_attackers_of_target_square(king_pos)
+            for pidx in enemy_attackers_of_king.search(1):
+                if self.black_pieces[pidx] == 1:
+                    enemy_attackers_of_king[pidx] = 0
+                elif pidx == target_square:
+                    self.in_check = True
+        
+        if self.in_check and self.no_moves_left: # checkmate
+            self.checkmate = True
+            self.game_over = True
+            algebraic_notation_move.append('#')
+            if self.white_move == 1:
+                game_score = '0-1'
+            elif self.white_move == -1:
+                game_score = '1-0'
+        elif self.in_check and not self.no_moves_left: # check, can still play
+            self.check = False
+            self.checkmate = False
+            self.game_over = False
+            algebraic_notation_move.append('+')
+        elif not self.in_check and self.no_moves_left: # no moves left, stalemate/draw
+            self.checkmate = False
+            self.game_over = True
+            game_score = '1/2-1/2'
+        else:
+            self.check = False
+            self.checkmate = False
+            self.game_over = False
+
+        self.move_history.append(''.join(algebraic_notation_move))
+        if game_score:
+            self.move_history.append(game_score)
             
             
     def update_gamestate(self):
@@ -382,6 +447,21 @@ class BoardChess(BlankBoard):
         For a target_square pos_idx, gets the piece type on that square and returns its UNMASKED bitboard attack ray
         I.e., you'll want to mask attack_ray friendly pieces to filter out illegal attacks
         '''
+        if input_type == 'P':
+            input_type = 'white_pawn'
+        elif input_type == 'p':
+            input_type = 'black_pawn'
+        elif input_type == 'R' or input_type == 'r':
+            input_type = 'rook'
+        elif input_type == 'B' or input_type == 'b':
+            input_type = 'bishop' 
+        elif input_type == 'Q' or input_type == 'q':
+            input_type = 'queen'
+        elif input_type == 'N' or input_type == 'n':
+            input_type = 'knight'
+        elif input_type == 'K' or input_type == 'k':
+            input_type = 'king'
+
         attack_ray = zeros(64, endian='little')
 
         occupied_minus_king = self.occupied_squares.copy()
@@ -765,7 +845,6 @@ class BoardChess(BlankBoard):
             for pidx in enemy_attackers_of_king.search(1):
                 if self.white_pieces[pidx] == 1:
                     enemy_attackers_of_king[pidx] = 0
-
         elif self.white_move == -1:
             king_pos = self.black_king.search(1)[0]
             sliding_types = ['R', 'B', 'Q']

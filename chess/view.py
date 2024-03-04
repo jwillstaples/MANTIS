@@ -70,6 +70,21 @@ class ChessGame(arcade.Window):
             self.draw_promotion_selection()
             self.draw_promotion_boxes()
             self.promotion_sprites.draw()
+        
+        if self.board.game_over:
+            self.draw_endgame()
+
+    
+    def draw_endgame(self):
+        screen_center_x = self.width / 2
+        screen_center_y = self.height / 2
+        arcade.draw_lrtb_rectangle_filled(0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, (0, 0, 0, 127))
+        s = ''
+        if self.board.white_move == 1:
+            s = 'BLACK WINS!'
+        elif self.board.white_move == -1:
+            s = 'WHITE WINS!'
+        arcade.draw_text(s, 400, screen_center_y, (255, 255, 255), font_size=36, anchor_x="center", anchor_y="center", bold=True)
 
 
     def load_pieces(self):
@@ -162,7 +177,7 @@ class ChessGame(arcade.Window):
         max_rows = 25  
         table_y_start = SCREEN_HEIGHT - 20  
         background_color = (40, 40, 40) 
-        move_width = 80
+        move_width = 60
         arcade.draw_rectangle_filled(table_x + 130, table_y_start - (max_rows / 2 * row_height), 260, max_rows * row_height, background_color)
 
         counter = 1
@@ -175,7 +190,7 @@ class ChessGame(arcade.Window):
             
             if i + 1 < len(self.board.move_history):
                 move_text = self.board.move_history[i + 1]
-                arcade.draw_text(move_text, table_x + 2*move_width, move_y, (167, 167, 167), 14, anchor_x="left", anchor_y="top", bold=True)
+                arcade.draw_text(move_text, table_x + 2*move_width + 30, move_y, (167, 167, 167), 14, anchor_x="left", anchor_y="top", bold=True)
 
             counter += 1
 
@@ -256,7 +271,7 @@ class ChessGame(arcade.Window):
     
 
     def on_mouse_press(self, x, y, button, modifiers):
-        if button == arcade.MOUSE_BUTTON_LEFT:
+        if button == arcade.MOUSE_BUTTON_LEFT and self.board.no_moves_left == False:
 
             if self.awaiting_promotion_selection:
                 rook_sprite = self.promotion_sprites[0]
