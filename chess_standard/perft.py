@@ -1,11 +1,12 @@
 import time
+import chess
 
 from prettytable import PrettyTable
 from bitarray import bitarray
 from bitarray.util import pprint
 
-from chess.utils import *
-from chess.board_chess import BoardChess
+from chess_standard.utils import *
+from chess_standard.board_chess import BoardChess
 
 
 def perft(board, depth):
@@ -76,12 +77,13 @@ if __name__ == '__main__':
     perft_depth = 3
     fen = 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1'
 
-    board.visualize_current_gamestate()
+    # board.visualize_current_gamestate()
     board.set_fen_gamestate(fen)
-    board.visualize_current_gamestate()
-    # single_depth_count = single_perft(board, perft_depth)
-    # print('')
-    # all_depth_counts = table_perft(board, perft_depth)
+    # board.visualize_current_gamestate()
+
+    single_depth_count = single_perft(board, perft_depth)
+    print('')
+    all_depth_counts = table_perft(board, perft_depth)
 
 
 

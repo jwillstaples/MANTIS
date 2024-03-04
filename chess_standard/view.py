@@ -2,8 +2,8 @@ import arcade
 
 from bitarray.util import zeros
 
-from chess.board_chess import BoardChess
-from chess.utils import *
+from chess_standard.board_chess import BoardChess
+from chess_standard.utils import *
 
 SCREEN_WIDTH = 1100
 SCREEN_HEIGHT = 800

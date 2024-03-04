@@ -1,9 +1,9 @@
 
 from bitarray.util import pprint
 
-from chess.utils import *
-from chess.precompute import *
-from chess.board_chess import BoardChess
+from chess_standard.utils import *
+from chess_standard.precompute import *
+from chess_standard.board_chess import BoardChess
 
 
 def simulate_human_vs_human(board, num_moves):

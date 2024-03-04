@@ -5,8 +5,8 @@ from prettytable import PrettyTable
 from bitarray.util import zeros, ones
 
 from common.board import BlankBoard
-from chess.utils import *
-from chess.precompute import *
+from chess_standard.utils import *
+from chess_standard.precompute import *
 
 
 class BoardChess(BlankBoard):

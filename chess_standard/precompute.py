@@ -1,5 +1,5 @@
 
-from chess.utils import *
+from chess_standard.utils import *
 
 from bitarray.util import zeros
 
