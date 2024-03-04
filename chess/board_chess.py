@@ -6,7 +6,7 @@ from bitarray.util import zeros
 
 from common.board import BlankBoard
 from chess.utils import *
-from chess.precompute import precompute_rook_rays, precompute_bishop_rays
+from chess.precompute import *
 
 
 class BoardChess(BlankBoard):
@@ -123,6 +123,9 @@ class BoardChess(BlankBoard):
         }
 
         # Initialize sliding piece attack rays
+        self.pawn_rays = precompute_pawn_rays()
+        self.knight_rays = precompute_knight_rays()
+        self.king_rays = precompute_king_rays()
         self.rook_rays = precompute_rook_rays()
         self.bishop_rays = precompute_bishop_rays()
 
@@ -335,7 +338,7 @@ class BoardChess(BlankBoard):
         for piece_symbol, piece_bitboard in self.black_piece_bitboards.items():
             if piece_bitboard[target_square] == 1:
                 return piece_symbol
-        return None
+        return None # empty square
     
         
     def get_bitboard_of_square(self, target_square):
@@ -374,6 +377,471 @@ class BoardChess(BlankBoard):
     
 
     # ----------------------------------- PIECE MOVE GENERATION METHODS -----------------------------------------------------------------------------------------------
+    def get_attack_ray_of_target_square(self, target_square_pos_idx, input_type):
+        '''
+        For a target_square pos_idx, gets the piece type on that square and returns its UNMASKED bitboard attack ray
+        I.e., you'll want to mask attack_ray friendly pieces to filter out illegal attacks
+        '''
+        attack_ray = zeros(64, endian='little')
+
+        occupied_minus_king = self.occupied_squares.copy()
+        if self.white_move == 1:
+            occupied_minus_king[self.white_king.search(1)[0]] = 0
+        elif self.white_move == -1:
+            occupied_minus_king[self.black_king.search(1)[0]] = 0
+
+        if input_type == 'rook':
+            for dir4 in [0, 1, 2, 3]:
+                rook_attacks = getRookRayAttacks(self.rook_rays, occupied_minus_king, dir4, target_square_pos_idx)
+                attack_ray |= rook_attacks
+
+        elif input_type == 'bishop':
+            for dir4 in [0, 1, 2, 3]:
+                bishop_attacks = getBishopRayAttacks(self.bishop_rays, occupied_minus_king, dir4, target_square_pos_idx)
+                attack_ray |= bishop_attacks
+
+        elif input_type == 'queen':
+            for dir4 in [0, 1, 2, 3]:
+                line_attacks = getRookRayAttacks(self.rook_rays, occupied_minus_king, dir4, target_square_pos_idx)
+                diag_attacks = getBishopRayAttacks(self.bishop_rays, occupied_minus_king, dir4, target_square_pos_idx)
+                queen_attacks = line_attacks | diag_attacks
+                attack_ray |= queen_attacks
+
+        elif input_type == 'white_pawn' or input_type == 'black_pawn':
+            if input_type == 'white_pawn':
+                attack_ray = self.pawn_rays[0][target_square_pos_idx].copy()
+            elif input_type == 'black_pawn':
+                attack_ray = self.pawn_rays[1][target_square_pos_idx].copy()
+
+        elif input_type == 'knight':
+            attack_ray = self.knight_rays[target_square_pos_idx].copy()
+
+        elif input_type == 'king':
+            attack_ray = self.king_rays[target_square_pos_idx].copy()
+        
+        return attack_ray
+
+
+    def get_pinned_piece_dict(self, king_pos):
+        pinned_piece_dict = {} # pinned_piece_pos_idx : pinner_pos_idx
+
+        king_rook_attack_rays = [zeros(64, endian='little') for _ in range(4)]
+        king_bishop_attack_rays = [zeros(64, endian='little') for _ in range(4)]
+        king_queen_attack_rays = [zeros(64, endian='little') for _ in range(8)]
+        for dir4 in [0, 1, 2, 3]:
+            # 0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST
+            king_rook_attack_rays[dir4] = getRookRayAttacks(self.rook_rays, self.occupied_squares, dir4, king_pos)
+            # 0 = NORTHWEST, 1 = NORTHEAST, 2 = SOUTHEAST, 3 = SOUTHWEST
+            king_bishop_attack_rays[dir4] = getBishopRayAttacks(self.bishop_rays, self.occupied_squares, dir4, king_pos)
+            # 0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST, 4 = NORTHWEST, 5 = NORTHEAST, 6 = SOUTHEAST, 7 = SOUTHWEST
+            king_queen_attack_rays[dir4] = king_rook_attack_rays[dir4].copy()
+            king_queen_attack_rays[dir4+4] = king_bishop_attack_rays[dir4].copy()
+
+        if self.white_move == 1:
+            for pinning_attackers in ['r', 'b', 'q']:
+                for pidx in self.black_piece_bitboards[pinning_attackers].search(1):
+                    attacker_ray = [zeros(64, endian='little') for _ in range(8)]
+
+                    if pinning_attackers == 'r':
+                        for dir4 in [0, 1, 2, 3]:
+                            # 0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST
+                            attacker_ray[dir4] = getRookRayAttacks(self.rook_rays, self.occupied_squares, dir4, pidx)
+
+                        king_pinned_from_northern_rook = king_rook_attack_rays[0] & attacker_ray[2] # use rook's southern ray
+                        king_pinned_from_eastern_rook = king_rook_attack_rays[1] & attacker_ray[3] # use rook's western ray
+                        king_pinned_from_southern_rook = king_rook_attack_rays[2] & attacker_ray[0] # use rook's northern ray
+                        king_pinned_from_western_rook = king_rook_attack_rays[3] & attacker_ray[1] # use rook's eastern ray
+
+                        combined = (
+                            king_pinned_from_northern_rook | 
+                            king_pinned_from_eastern_rook | 
+                            king_pinned_from_southern_rook | 
+                            king_pinned_from_western_rook
+                        )
+                        for pinned_piece_idx in combined.search(1):
+                            if self.white_pieces[pinned_piece_idx] == 1:
+                                pinned_piece_dict[pinned_piece_idx] = pidx
+
+                    elif pinning_attackers == 'b':
+                        for dir4 in [0, 1, 2, 3]:
+                            # 0 = NORTHWEST, 1 = NORTHEAST, 2 = SOUTHEAST, 3 = SOUTHWEST
+                            attacker_ray[dir4] = getBishopRayAttacks(self.bishop_rays, self.occupied_squares, dir4, pidx)
+                        
+                        king_pinned_from_NW_bishop = king_bishop_attack_rays[0] & attacker_ray[2] # use bishop's SE ray
+                        king_pinned_from_NE_bishop = king_bishop_attack_rays[1] & attacker_ray[3] # use bishop's SW ray
+                        king_pinned_from_SE_bishop = king_bishop_attack_rays[2] & attacker_ray[0] # use bishop's NW ray
+                        king_pinned_from_SW_bishop = king_bishop_attack_rays[3] & attacker_ray[1] # use bishop's NE ray
+
+                        combined = (
+                            king_pinned_from_NW_bishop | 
+                            king_pinned_from_NE_bishop | 
+                            king_pinned_from_SE_bishop | 
+                            king_pinned_from_SW_bishop
+                        )
+                        for pinned_piece_idx in combined.search(1):
+                            if self.white_pieces[pinned_piece_idx] == 1:
+                                pinned_piece_dict[pinned_piece_idx] = pidx
+
+                    else:
+                        for dir4 in [0, 1, 2, 3]:
+                            # 0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST, 4 = NORTHWEST, 5 = NORTHEAST, 6 = SOUTHEAST, 7 = SOUTHWEST
+                            line_attacks = getRookRayAttacks(self.rook_rays, self.occupied_squares, dir4, pidx)
+                            diag_attacks = getBishopRayAttacks(self.bishop_rays, self.occupied_squares, dir4, pidx)
+                            attacker_ray[dir4] = line_attacks
+                            attacker_ray[dir4+4] = diag_attacks
+                        
+                        king_pinned_from_N_queen = king_queen_attack_rays[0] & attacker_ray[2] 
+                        king_pinned_from_E_queen = king_queen_attack_rays[1] & attacker_ray[3] 
+                        king_pinned_from_S_queen = king_queen_attack_rays[2] & attacker_ray[0]
+                        king_pinned_from_W_queen = king_queen_attack_rays[3] & attacker_ray[1]
+                        king_pinned_from_NW_queen = king_queen_attack_rays[4] & attacker_ray[6]
+                        king_pinned_from_NE_queen = king_queen_attack_rays[5] & attacker_ray[7]
+                        king_pinned_from_SE_queen = king_queen_attack_rays[6] & attacker_ray[4]
+                        king_pinned_from_SW_queen = king_queen_attack_rays[7] & attacker_ray[5]
+
+                        combined = (
+                            king_pinned_from_N_queen | 
+                            king_pinned_from_E_queen | 
+                            king_pinned_from_S_queen | 
+                            king_pinned_from_W_queen |
+                            king_pinned_from_NW_queen |
+                            king_pinned_from_NE_queen |
+                            king_pinned_from_SE_queen |
+                            king_pinned_from_SW_queen
+                        )
+                        for pinned_piece_idx in combined.search(1):
+                            if self.white_pieces[pinned_piece_idx] == 1:
+                                pinned_piece_dict[pinned_piece_idx] = pidx
+
+                    # print(f'\nPinned piece pos_idxs after {pinning_attackers}: {pinned_piece_pos_idxs}')
+        
+        elif self.white_move == -1:
+            for pinning_attackers in ['R', 'B', 'Q']:
+                for pidx in self.white_piece_bitboards[pinning_attackers].search(1):
+                    attacker_ray = [zeros(64, endian='little') for _ in range(8)]
+
+                    if pinning_attackers == 'R':
+                        for dir4 in [0, 1, 2, 3]:
+                            # 0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST
+                            attacker_ray[dir4] = getRookRayAttacks(self.rook_rays, self.occupied_squares, dir4, pidx)
+
+                        king_pinned_from_northern_rook = king_rook_attack_rays[0] & attacker_ray[2] # use rook's southern ray
+                        king_pinned_from_eastern_rook = king_rook_attack_rays[1] & attacker_ray[3] # use rook's western ray
+                        king_pinned_from_southern_rook = king_rook_attack_rays[2] & attacker_ray[0] # use rook's northern ray
+                        king_pinned_from_western_rook = king_rook_attack_rays[3] & attacker_ray[1] # use rook's eastern ray
+
+                        combined = (
+                            king_pinned_from_northern_rook | 
+                            king_pinned_from_eastern_rook | 
+                            king_pinned_from_southern_rook | 
+                            king_pinned_from_western_rook
+                        )
+                        for pinned_piece_idx in combined.search(1):
+                            if self.black_pieces[pinned_piece_idx] == 1:
+                                pinned_piece_dict[pinned_piece_idx] = pidx
+
+                    elif pinning_attackers == 'B':
+                        for dir4 in [0, 1, 2, 3]:
+                            # 0 = NORTHWEST, 1 = NORTHEAST, 2 = SOUTHEAST, 3 = SOUTHWEST
+                            attacker_ray[dir4] = getBishopRayAttacks(self.bishop_rays, self.occupied_squares, dir4, pidx)
+                        
+                        king_pinned_from_NW_bishop = king_bishop_attack_rays[0] & attacker_ray[2] # use bishop's SE ray
+                        king_pinned_from_NE_bishop = king_bishop_attack_rays[1] & attacker_ray[3] # use bishop's SW ray
+                        king_pinned_from_SE_bishop = king_bishop_attack_rays[2] & attacker_ray[0] # use bishop's NW ray
+                        king_pinned_from_SW_bishop = king_bishop_attack_rays[3] & attacker_ray[1] # use bishop's NE ray
+
+                        combined = (
+                            king_pinned_from_NW_bishop | 
+                            king_pinned_from_NE_bishop | 
+                            king_pinned_from_SE_bishop | 
+                            king_pinned_from_SW_bishop
+                        )
+                        for pinned_piece_idx in combined.search(1):
+                            if self.black_pieces[pinned_piece_idx] == 1:
+                                pinned_piece_dict[pinned_piece_idx] = pidx
+
+                    else:
+                        for dir4 in [0, 1, 2, 3]:
+                            # 0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST, 4 = NORTHWEST, 5 = NORTHEAST, 6 = SOUTHEAST, 7 = SOUTHWEST
+                            line_attacks = getRookRayAttacks(self.rook_rays, self.occupied_squares, dir4, pidx)
+                            diag_attacks = getBishopRayAttacks(self.bishop_rays, self.occupied_squares, dir4, pidx)
+                            attacker_ray[dir4] = line_attacks
+                            attacker_ray[dir4+4] = diag_attacks
+                        
+                        king_pinned_from_N_queen = king_queen_attack_rays[0] & attacker_ray[2] 
+                        king_pinned_from_E_queen = king_queen_attack_rays[1] & attacker_ray[3] 
+                        king_pinned_from_S_queen = king_queen_attack_rays[2] & attacker_ray[0]
+                        king_pinned_from_W_queen = king_queen_attack_rays[3] & attacker_ray[1]
+                        king_pinned_from_NW_queen = king_queen_attack_rays[4] & attacker_ray[6]
+                        king_pinned_from_NE_queen = king_queen_attack_rays[5] & attacker_ray[7]
+                        king_pinned_from_SE_queen = king_queen_attack_rays[6] & attacker_ray[4]
+                        king_pinned_from_SW_queen = king_queen_attack_rays[7] & attacker_ray[5]
+
+                        combined = (
+                            king_pinned_from_N_queen | 
+                            king_pinned_from_E_queen | 
+                            king_pinned_from_S_queen | 
+                            king_pinned_from_W_queen |
+                            king_pinned_from_NW_queen |
+                            king_pinned_from_NE_queen |
+                            king_pinned_from_SE_queen |
+                            king_pinned_from_SW_queen
+                        )
+                        for pinned_piece_idx in combined.search(1):
+                            if self.black_pieces[pinned_piece_idx] == 1:
+                                pinned_piece_dict[pinned_piece_idx] = pidx
+
+        return pinned_piece_dict
+
+
+    def get_attackers_of_target_square(self, target_square_pos_idx):
+        '''
+        Given a target_square pos_idx, returns a bitboard with 1's representing all pieces of the opposite color threatening target_square
+        '''
+        square_rook_attack_ray = self.get_attack_ray_of_target_square(target_square_pos_idx, input_type='rook')
+        square_bishop_attack_ray = self.get_attack_ray_of_target_square(target_square_pos_idx, input_type='bishop')
+        square_queen_attack_ray = self.get_attack_ray_of_target_square(target_square_pos_idx, input_type='queen')
+        square_knight_attack_ray = self.get_attack_ray_of_target_square(target_square_pos_idx, input_type='knight')
+        square_king_attack_ray = self.get_attack_ray_of_target_square(target_square_pos_idx, input_type='king')
+
+        if self.white_move == 1:
+            square_pawn_attack_ray = self.get_attack_ray_of_target_square(target_square_pos_idx, input_type='white_pawn')
+
+            rook_attackers = square_rook_attack_ray & self.black_rooks
+            bishop_attackers = square_bishop_attack_ray & self.black_bishops
+            queen_attackers = square_queen_attack_ray & self.black_queens
+            pawn_attackers = square_pawn_attack_ray & self.black_pawns
+            knight_attackers = square_knight_attack_ray & self.black_knights
+            king_attackers = square_king_attack_ray & self.black_king
+
+        elif self.white_move == -1:
+            square_pawn_attack_ray = self.get_attack_ray_of_target_square(target_square_pos_idx, input_type='black_pawn')
+
+            rook_attackers = square_rook_attack_ray & self.white_rooks
+            bishop_attackers = square_bishop_attack_ray & self.white_bishops
+            queen_attackers = square_queen_attack_ray & self.white_queens
+            pawn_attackers = square_pawn_attack_ray & self.white_pawns
+            knight_attackers = square_knight_attack_ray & self.white_knights
+            king_attackers = square_king_attack_ray & self.white_king
+        
+        combined_attackers = rook_attackers | bishop_attackers | queen_attackers | pawn_attackers | knight_attackers | king_attackers
+            
+        return combined_attackers
+    
+
+    def get_between_source_target_ray(self, origin_square, target_square):
+        '''
+        Given an origin_square pos_idx and target_square pos_idx, returns the rank/file/diag/antidiag bitboard of the ray from source -> dest
+        This function is used for sliding pieces only
+        Exclusive origin_square, inclusive target_square
+        '''
+        piece_type = self.get_piece_of_square(origin_square)
+        files = 'abcdefgh'
+
+        if piece_type in ['R', 'B', 'Q', 'r', 'b', 'q']:
+            filerank_o = pos_idx_to_filerank(origin_square)
+            filerank_t = pos_idx_to_filerank(target_square)
+
+            file_o, rank_o = filerank_o[0], filerank_o[1]
+            file_t, rank_t = filerank_t[0], filerank_t[1]
+
+            occupied_plus_target = self.occupied_squares.copy()
+            occupied_plus_target[target_square] = 1
+
+            exclusive_inclusive_ray = zeros(64, endian='little')
+
+            if piece_type == 'R' or piece_type == 'r':
+                if file_o == file_t and int(rank_o) < int(rank_t): # NORTH RAY
+                    mask = getRookRayAttacks(self.rook_rays, occupied_plus_target, 0, origin_square)
+                    exclusive_inclusive_ray = mask & self.file[file_o]
+                elif files.index(file_o) < files.index(file_t) and rank_o == rank_t: # EAST RAY
+                     mask = getRookRayAttacks(self.rook_rays, occupied_plus_target, 1, origin_square)
+                     exclusive_inclusive_ray = mask & self.rank[rank_o]
+                elif file_o == file_t and int(rank_o) > int(rank_t): # SOUTH RAY
+                     mask = getRookRayAttacks(self.rook_rays, occupied_plus_target, 2, origin_square)
+                     exclusive_inclusive_ray = mask & self.file[file_o]
+                elif files.index(file_o) > files.index(file_t) and rank_o == rank_t: # WEST RAY
+                     mask = getRookRayAttacks(self.rook_rays, occupied_plus_target, 3, origin_square)
+                     exclusive_inclusive_ray = mask & self.rank[rank_o]
+
+            elif piece_type == 'B' or piece_type == 'b':
+                # 0 = NORTHWEST, 1 = NORTHEAST, 2 = SOUTHEAST, 3 = SOUTHWEST
+                if files.index(file_o) > files.index(file_t) and int(rank_o) < int(rank_t): # NORTHWEST RAY
+                    mask = getBishopRayAttacks(self.bishop_rays, occupied_plus_target, 0, origin_square)
+                    exclusive_inclusive_ray = mask
+                elif files.index(file_o) < files.index(file_t) and int(rank_o) < int(rank_t): # NORTHEAST RAY
+                    mask = getBishopRayAttacks(self.bishop_rays, occupied_plus_target, 1, origin_square)
+                    exclusive_inclusive_ray = mask
+                elif files.index(file_o) < files.index(file_t) and int(rank_o) > int(rank_t): # SOUTHEAST RAY
+                    mask = getBishopRayAttacks(self.bishop_rays, occupied_plus_target, 2, origin_square)
+                    exclusive_inclusive_ray = mask
+                elif files.index(file_o) > files.index(file_t) and int(rank_o) > int(rank_t): # SOUTHWEST RAY
+                    mask = getBishopRayAttacks(self.bishop_rays, occupied_plus_target, 3, origin_square)
+                    exclusive_inclusive_ray = mask
+
+            elif piece_type == 'Q' or piece_type == 'q':
+                if file_o == file_t and int(rank_o) < int(rank_t): # NORTH RAY
+                    mask = getRookRayAttacks(self.rook_rays, occupied_plus_target, 0, origin_square)
+                    exclusive_inclusive_ray = mask & self.file[file_o]
+                elif files.index(file_o) < files.index(file_t) and rank_o == rank_t: # EAST RAY
+                     mask = getRookRayAttacks(self.rook_rays, occupied_plus_target, 1, origin_square)
+                     exclusive_inclusive_ray = mask & self.rank[rank_o]
+                elif file_o == file_t and int(rank_o) > int(rank_t): # SOUTH RAY
+                     mask = getRookRayAttacks(self.rook_rays, occupied_plus_target, 2, origin_square)
+                     exclusive_inclusive_ray = mask & self.file[file_o]
+                elif files.index(file_o) > files.index(file_t) and rank_o == rank_t: # WEST RAY
+                     mask = getRookRayAttacks(self.rook_rays, occupied_plus_target, 3, origin_square)
+                     exclusive_inclusive_ray = mask & self.rank[rank_o]
+                elif files.index(file_o) > files.index(file_t) and int(rank_o) < int(rank_t): # NORTHWEST RAY
+                    mask = getBishopRayAttacks(self.bishop_rays, occupied_plus_target, 0, origin_square)
+                    exclusive_inclusive_ray = mask
+                elif files.index(file_o) < files.index(file_t) and int(rank_o) < int(rank_t): # NORTHEAST RAY
+                    mask = getBishopRayAttacks(self.bishop_rays, occupied_plus_target, 1, origin_square)
+                    exclusive_inclusive_ray = mask
+                elif files.index(file_o) < files.index(file_t) and int(rank_o) > int(rank_t): # SOUTHEAST RAY
+                    mask = getBishopRayAttacks(self.bishop_rays, occupied_plus_target, 2, origin_square)
+                    exclusive_inclusive_ray = mask
+                elif files.index(file_o) > files.index(file_t) and int(rank_o) > int(rank_t): # SOUTHWEST RAY
+                    mask = getBishopRayAttacks(self.bishop_rays, occupied_plus_target, 3, origin_square)
+                    exclusive_inclusive_ray = mask
+                
+        return exclusive_inclusive_ray
+
+
+    def get_legal_moves(self):
+        '''
+        Case 1: King is in single check
+            Option 1 = Move the king out of check
+            Option 2 = Capture the checking piece
+            Option 3 = Block the checking piece (if checking piece is a sliding piece)
+
+        Case 2: King is in double check
+            Option 1 = Move the king out of check
+
+        Case 3: King not in check, but making the move would result in check
+                i.e., the absolute pinned piece case
+            Option 1 = Move the king somewhere legal
+            Option 2 = Move the pinned piece along the ray
+        
+        Case 4: King not in check, no absolutely pinned pieces
+            Option 1 = Move the king somewhere legal
+            Option 2 = Move any of the other pieces for any of their pseudolegal moves
+        
+        ---------------------------------------------------------------------------------------------
+
+        1.) For pseudolegal moves that move the King:
+            a.) combined = attacked_by_rooks | ... | attacked_by_king
+            b.) If not combined.any(): # there does not exist a piece that attacks that square
+                    legal_encoded_moves.append(pseudolegal_move)
+        
+        2.) For pseudolegal moves that move anything not the King:
+            a.) determine if the king is in check or not with attackers
+                i.) if len(attackers.search(1)) >= 2: # DOUBLE CHECK
+                        # illegal move, can only move the king here, so continue
+                        continue
+                        
+                ii.) if len(attackers.search(1)) == 1: # SINGLE CHECK
+                        # pseudolegal move = legal move IF 
+                        # 1.) it captures the attacker
+                        # 2.) it blocks the incoming attack if the attacker is a sliding piece
+                        # 3.) doing (1) or (2) does not expose the king to an attack, i.e. absolutely pinned
+
+                iii.) if len(attackers.search(1)) == 0: # NOT IN CHECK
+                        # 1.) the piece is not absolutely pinned:
+                        #       pseudolegal move = legal move
+                        # 2.) the piece is absolutely pinned:
+                        #       pseudolegal move = legal move IF it moves along the attacking ray
+
+        '''
+        legal_encoded_moves = []
+        pseudolegal_encoded_moves = self.get_pseudolegal_moves()
+
+        # SETUP KING CHECK BITBOARDS
+        if self.white_move == 1:
+            king_pos = self.white_king.search(1)[0]
+            sliding_types = ['r', 'b', 'q']
+
+            enemy_attackers_of_king = self.get_attackers_of_target_square(king_pos) # enemy = for check computing
+            for pidx in enemy_attackers_of_king.search(1):
+                if self.white_pieces[pidx] == 1:
+                    enemy_attackers_of_king[pidx] = 0
+
+        elif self.white_move == -1:
+            king_pos = self.black_king.search(1)[0]
+            sliding_types = ['R', 'B', 'Q']
+
+            enemy_attackers_of_king = self.get_attackers_of_target_square(king_pos)
+            for pidx in enemy_attackers_of_king.search(1):
+                if self.black_pieces[pidx] == 1:
+                    enemy_attackers_of_king[pidx] = 0
+        
+
+        pinned_piece_dict = self.get_pinned_piece_dict(king_pos)
+        pinned_piece_idxs = list(pinned_piece_dict.keys())
+        pinned_piece_bitboard = zeros(64, endian='little')
+        pinned_piece_bitboard[pinned_piece_idxs] = 1
+        
+        num_attackers = len(enemy_attackers_of_king.search(1))
+
+        print(f'Number of attackers: {num_attackers}')
+
+
+        # CONVERTING MOVES
+        for encoded_move in pseudolegal_encoded_moves:
+            origin_square, target_square, promotion_piece_type, special_move_flag = decode_move(encoded_move)
+            moving_piece_type = self.get_piece_of_square(origin_square)
+
+            # KING MOVES
+            if moving_piece_type == 'K' or moving_piece_type == 'k':
+                attackers = self.get_attackers_of_target_square(target_square)
+
+                if self.white_move == 1: # filter out friendly "attackers"
+                    for pidx in attackers.search(1):
+                        if self.white_pieces[pidx] == 1:
+                            attackers[pidx] = 0
+                elif self.white_move == -1:
+                    for pidx in attackers.search(1):
+                        if self.black_pieces[pidx] == 1:
+                            attackers[pidx] = 0
+
+                if not attackers.any(): # there does not exist a piece that attacks target_square
+                    legal_encoded_moves.append(encoded_move) # i.e., can move the King there
+            
+            # ANY OTHER PIECE MOVES
+            else:     
+                if num_attackers >= 2: # DOUBLE CHECK
+                    continue
+
+                elif num_attackers == 1: # SINGLE CHECK
+                    attacker_pos_idx = enemy_attackers_of_king.search(1)[0]
+                    attacker_piece_type = self.get_piece_of_square(attacker_pos_idx)
+                    attacker_ray_bitboard = self.get_between_source_target_ray(attacker_pos_idx, king_pos) # exclusive, inclusive
+                    # print(f'Move: {origin_square ^ 56} -> {target_square ^ 56}')
+                    # lerf_bitboard_to_2D_numpy(pinned_piece_bitboard)
+                    # lerf_bitboard_to_2D_numpy(attacker_ray_bitboard)
+
+                    if pinned_piece_bitboard[origin_square] == 0: # two conditions for legality IF the moving piece isn't a pinned piece
+                        if target_square == attacker_pos_idx: # pseudolegal = legal if can capture, or 
+                            legal_encoded_moves.append(encoded_move)
+                        elif attacker_ray_bitboard[target_square] == 1: # we can move it to block the attacker
+                            legal_encoded_moves.append(encoded_move) # if target_sq in the attacker_ray, it's blocking
+                    else: # if it is a pinned piece, gg just skip
+                        continue
+
+                else: # NOT IN CHECK, need to check if moving piece is absolutely pinned
+                    if pinned_piece_bitboard[origin_square] == 1: # if a pinned piece, can only move along the pinned ray
+                        attacker_pos_idx = pinned_piece_dict[origin_square] # get idx of the attacking piece that is pinning the move piece
+                        attacker_ray_bitboard = self.get_between_source_target_ray(attacker_pos_idx, king_pos)
+
+                        if attacker_ray_bitboard[target_square] == 1: # if the move is within the ray, it's legal, otherwise not legal
+                            legal_encoded_moves.append(encoded_move)
+
+                    else: # if not pinned, pseudolegal = legal
+                        legal_encoded_moves.append(encoded_move)
+
+        return legal_encoded_moves
+    
+
     def get_pseudolegal_moves(self):
         encoded_moves = []
 

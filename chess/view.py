@@ -247,7 +247,7 @@ class ChessGame(arcade.Window):
     def get_valid_moves(self, filerank):
         filtered_moves = {}
 
-        for i, test_move in enumerate(self.board.get_pseudolegal_moves()):
+        for i, test_move in enumerate(self.board.get_legal_moves()):
             origin_square, target_square, promotion_piece_type, special_move_flag = decode_move(test_move)
             if pos_idx_to_filerank(origin_square) == filerank:
                 filtered_moves[pos_idx_to_filerank(target_square)] = special_move_flag

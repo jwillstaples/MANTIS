@@ -134,3 +134,159 @@ def precompute_bishop_rays():
     
     return bishop_rays
 
+
+def precompute_pawn_rays():
+    pawn_rays = [[zeros(64, endian='little') for _ in range(64)] for _ in range(2)]
+
+    for pos_idx in range(64):
+        filerank = pos_idx_to_filerank(pos_idx)
+        file, rank = filerank[0], filerank[1]
+
+        white_pawn_ray = zeros(64, endian='little')
+        black_pawn_ray = zeros(64, endian='little')
+
+        # WHITE PAWN ATTACK RAYS
+        if file == 'a':
+            if pos_idx - 7 >= 0:
+                white_pawn_ray[(pos_idx - 7)] = 1
+        elif file == 'h':
+            if pos_idx - 9 >= 0:
+                white_pawn_ray[(pos_idx - 9)] = 1
+        else:
+            if pos_idx - 9 >= 0:
+                white_pawn_ray[[(pos_idx - 9), (pos_idx - 7)]] = 1
+        pawn_rays[0][pos_idx] = white_pawn_ray
+
+        # BLACK PAWN ATTACK RAYS
+        if file == 'a':
+            if pos_idx + 9 <= 63:
+                black_pawn_ray[(pos_idx + 9)] = 1
+        elif file == 'h':
+            if pos_idx + 7 <= 63:
+                black_pawn_ray[(pos_idx + 7)] = 1
+        else:
+            if pos_idx + 9 <= 63:
+                black_pawn_ray[[(pos_idx + 9), (pos_idx + 7)]] = 1
+        pawn_rays[1][pos_idx] = black_pawn_ray
+    
+    return pawn_rays
+
+
+def precompute_knight_rays():
+    knight_rays = [zeros(64, endian='little') for _ in range(64)]
+    
+    wraparound_masks = {
+        6: ((file_bitboards['g'] | file_bitboards['h']), (file_bitboards['a'] | file_bitboards['b'])),
+        15: (file_bitboards['h'], file_bitboards['a']),
+        17: (file_bitboards['a'], file_bitboards['h']),
+        10: ((file_bitboards['a'] | file_bitboards['b']), (file_bitboards['g'] | file_bitboards['h']))
+    }
+    
+    for pos_idx in range(64):
+        filerank = pos_idx_to_filerank(pos_idx)
+        file, rank = filerank[0], filerank[1]
+
+        knight_ray = zeros(64, endian='little')
+        
+        for shift in [6, 15, 17, 10]:
+            wraparound_file_north, wraparound_file_south = wraparound_masks[shift]
+
+            # NORTH LOGIC
+            if (
+                (pos_idx - shift >= 0) and # handles going out of range
+                (not wraparound_file_north[pos_idx]) # handles wraparound
+            ): 
+                knight_ray[pos_idx - shift] = 1
+                    
+            # SOUTH LOGIC
+            if (
+                (pos_idx + shift <= 63) and
+                (not wraparound_file_south[pos_idx])
+            ):
+                knight_ray[pos_idx + shift] = 1
+            
+        knight_rays[pos_idx] = knight_ray
+
+    return knight_rays
+
+
+def precompute_king_rays():
+    king_rays = [zeros(64, endian='little') for _ in range(64)]
+
+    for pos_idx in range(64):
+        filerank = pos_idx_to_filerank(pos_idx)
+        file, rank = filerank[0], filerank[1]
+
+        king_ray = zeros(64, endian='little')
+
+        # northwest = -9
+        if file != 'a' and rank != '8':
+            king_ray[pos_idx - 9] = 1
+        # north = -8
+        if rank != '8':
+            king_ray[pos_idx - 8] = 1
+        # northeast = -7
+        if file != 'h' and rank != '8':
+            king_ray[pos_idx - 7] = 1
+        # east = +1
+        if file != 'h':
+            king_ray[pos_idx + 1] = 1
+        # southeast = +9
+        if file != 'h' and rank != '1':
+            king_ray[pos_idx + 9] = 1
+        # south = +8
+        if rank != '1':
+            king_ray[pos_idx + 8] = 1
+        # southwest = +7
+        if file != 'a' and rank != '1':
+            king_ray[pos_idx + 7] = 1
+        # west = -1
+        if file != 'a':
+            king_ray[pos_idx - 1] = 1
+
+        king_rays[pos_idx] = king_ray
+
+    return king_rays
+
+
+if __name__ == '__main__':
+    
+    rook_rays = precompute_rook_rays()
+    bishop_rays = precompute_bishop_rays()
+    pawn_rays = precompute_pawn_rays()
+    knight_rays = precompute_knight_rays()
+    king_rays = precompute_king_rays()
+
+    lerf_idx = 53
+    pos_idx = lerf_idx ^ 56
+    print(f'pos_idx: {pos_idx}, lerf_idx: {lerf_idx}')
+
+    filerank = pos_idx_to_filerank(pos_idx)
+    file, rank = filerank[0], filerank[1]
+
+    rook_ray = (
+        rook_rays[0][pos_idx] | 
+        rook_rays[1][pos_idx] | 
+        rook_rays[2][pos_idx] | 
+        rook_rays[3][pos_idx]
+    )
+
+    bishop_ray = (
+        bishop_rays[0][pos_idx] | 
+        bishop_rays[1][pos_idx] | 
+        bishop_rays[2][pos_idx] | 
+        bishop_rays[3][pos_idx]
+    )
+
+    queen_ray = rook_ray | bishop_ray
+
+    # for pidx in range(64):
+    #     print(f'\npos_idx: {pidx}, lerf_idx: {pidx ^ 56}')
+    #     ray = knight_rays[pidx]
+    #     lerf_bitboard_to_2D_numpy(ray)
+        
+    lerf_bitboard_to_2D_numpy(pawn_rays[1][pos_idx])
+    # lerf_bitboard_to_2D_numpy(rook_ray)
+    # lerf_bitboard_to_2D_numpy(bishop_ray)
+    # lerf_bitboard_to_2D_numpy(queen_ray)
+    # lerf_bitboard_to_2D_numpy(pawn_ray)
