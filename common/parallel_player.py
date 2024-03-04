@@ -19,21 +19,21 @@ class ParallelPlayer(TrainingPlayer):
         mcts_iter: int,
         old_exists: bool,
         SAVE_DIR: str,
-        multicore: bool,
+        multicore: int,
         Net: Type[nn.Module],
         Board: Type[BlankBoard],
     ):
         super().__init__(mcts_iter, old_exists, SAVE_DIR, multicore, Net, Board)
 
     def generate_self_games(self, num):
-        if self.multicore:
+        if self.multicore > 1:
             return self.parallel_self_play(num)
         return self.serial_self_play(num)
 
     def generate_eval_games(
         self, num, iteration, candidate_net, old_net, candidate_net_file
     ):
-        if self.multicore:
+        if self.multicore > 1:
             return self.parallel_eval(
                 num, iteration, candidate_net, old_net, candidate_net_file
             )
@@ -118,27 +118,30 @@ class ParallelPlayer(TrainingPlayer):
             net.load_state_dict(torch.load("old.pt", map_location=torch.device(device)))
         net.eval()
 
-        queue = Queue()
-        stop_sig = Value("i", 0)
+        queues = [Queue() for _ in range(self.multicore - 1)]
+        stop_sigs = [Value("i", 0) for _ in range(self.multicore - 1)]
 
-        process = Process(
-            target=self.self_play_games_wrapper, args=(stop_sig, queue, num, True)
-        )
+        processes = [Process(
+            target=self.self_play_games_wrapper, args=(stop_sigs[i], queues[i], num, True)
+        ) for i in range(self.multicore - 1)]
 
-        process.start()
+        [process.start() for process in processes]
 
         all_data, idxs = self.play_games_in_parallel(
             num, net, net, self_play=True, telemetry=True, desc="SP"
         )
 
         while (
-            stop_sig.value == 0
-        ):  # Unknown where the dead lock is so using value to auto-reliquish
+            not all(stop_sig.value == 0 for stop_sig in stop_sigs)
+        ): 
             continue
+            
+        [process.join(timeout=1) for process in processes]
 
-        process.join(timeout=1)
-        all_data2 = queue.get()
-        all_data.extend(all_data2)
+        for queue in queues:
+            proc_data = queue.get()
+            all_data.extend(proc_data)
+        
         return net, GameDataset(all_data), idxs
 
     def self_play_games_wrapper(self, stop_sig, queue, num, self_play):

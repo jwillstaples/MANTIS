@@ -32,7 +32,7 @@ if __name__ == "__main__":
     old_exists = False
 
     SAVE_DIR = "data7"
-    multicore = True
+    multicore = 2
     Net = C4Net
     Board = BoardC4
 

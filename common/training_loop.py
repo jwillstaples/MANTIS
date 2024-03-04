@@ -27,7 +27,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def train(
     player: TrainingPlayer,
-    Net: Type[nn.Module], 
+    Net: Type[nn.Module],
     MAX_ITERATIONS,
     EPOCHS_PER_ITERATION,
     NUM_GENERATED,
