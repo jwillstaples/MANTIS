@@ -1208,36 +1208,75 @@ class BoardChess(BlankBoard):
                         legal_encoded_moves.append(encoded_move) # i.e., can move the King there
             
             # ANY OTHER PIECE MOVES
-            else:     
-                if num_attackers >= 2: # DOUBLE CHECK
+            else: 
+                if (
+                    self.get_piece_of_square(target_square) == 'K' or 
+                    self.get_piece_of_square(target_square) == 'k'
+                ):
                     continue
 
-                elif num_attackers == 1: # SINGLE CHECK
-                    attacker_pos_idx = enemy_attackers_of_king.search(1)[0]
-                    attacker_piece_type = self.get_piece_of_square(attacker_pos_idx)
-                    attacker_ray_bitboard = self.get_between_source_target_ray(attacker_pos_idx, king_pos) # exclusive, inclusive
-                    # print(f'Move: {origin_square ^ 56} -> {target_square ^ 56}')
-                    # lerf_bitboard_to_2D_numpy(pinned_piece_bitboard)
-                    # lerf_bitboard_to_2D_numpy(attacker_ray_bitboard)
+                else:
 
-                    if pinned_piece_bitboard[origin_square] == 0: # two conditions for legality IF the moving piece isn't a pinned piece
-                        if target_square == attacker_pos_idx: # pseudolegal = legal if can capture, or 
-                            legal_encoded_moves.append(encoded_move)
-                        elif attacker_ray_bitboard[target_square] == 1: # we can move it to block the attacker
-                            legal_encoded_moves.append(encoded_move) # if target_sq in the attacker_ray, it's blocking
-                    else: # if it is a pinned piece, gg just skip
+                    if num_attackers >= 2: # DOUBLE CHECK
                         continue
 
-                else: # NOT IN CHECK, need to check if moving piece is absolutely pinned
-                    if pinned_piece_bitboard[origin_square] == 1: # if a pinned piece, can only move along the pinned ray
-                        attacker_pos_idx = pinned_piece_dict[origin_square] # get idx of the attacking piece that is pinning the move piece
-                        attacker_ray_bitboard = self.get_between_source_target_ray(attacker_pos_idx, king_pos)
+                    elif num_attackers == 1: # SINGLE CHECK
+                        attacker_pos_idx = enemy_attackers_of_king.search(1)[0]
+                        attacker_ray_bitboard = self.get_between_source_target_ray(attacker_pos_idx, king_pos) # exclusive, inclusive
+                        # print(f'Move: {origin_square ^ 56} -> {target_square ^ 56}')
+                        # lerf_bitboard_to_2D_numpy(pinned_piece_bitboard)
+                        # lerf_bitboard_to_2D_numpy(attacker_ray_bitboard)
 
-                        if attacker_ray_bitboard[target_square] == 1: # if the move is within the ray, it's legal, otherwise not legal
-                            legal_encoded_moves.append(encoded_move)
+                        if pinned_piece_bitboard[origin_square] == 0: # two conditions for legality IF the moving piece isn't a pinned piece
+                            if target_square == attacker_pos_idx: # pseudolegal = legal if can capture, or 
+                                legal_encoded_moves.append(encoded_move)
+                            elif attacker_ray_bitboard[target_square] == 1: # we can move it to block the attacker
+                                legal_encoded_moves.append(encoded_move) # if target_sq in the attacker_ray, it's blocking
+                        else: # if it is a pinned piece, gg just skip
+                            continue
 
-                    else: # if not pinned, pseudolegal = legal
-                        legal_encoded_moves.append(encoded_move)
+                    else: # NOT IN CHECK, need to check if moving piece is absolutely pinned
+                        if pinned_piece_bitboard[origin_square] == 1: # if a pinned piece, can only move along the pinned ray
+                            attacker_pos_idx = pinned_piece_dict[origin_square] # get idx of the attacking piece that is pinning the move piece
+                            attacker_ray_bitboard = self.get_between_source_target_ray(attacker_pos_idx, king_pos)
+
+                            if attacker_ray_bitboard[target_square] == 1: # if the move is within the ray, it's legal, otherwise not legal
+                                legal_encoded_moves.append(encoded_move)
+
+                        else: # if not pinned, pseudolegal = legal as long as it's not fucking en passant
+                            if special_move_flag == 2:
+                                legal_passant = True
+                                temp = self.occupied_squares.copy()
+
+                                self.occupied_squares[origin_square] = 0
+                                self.occupied_squares[target_square] = 1
+                                if self.white_move == 1:
+                                    self.occupied_squares[target_square + 8] = 0
+                                    king_pos = self.white_king.search(1)[0]
+
+                                    enemy_attackers_of_king = self.get_attackers_of_target_square(king_pos) # enemy = for check computing
+                                    for pidx in enemy_attackers_of_king.search(1):
+                                        if self.white_pieces[pidx] == 1:
+                                            enemy_attackers_of_king[pidx] = 0
+                                elif self.white_move == -1:
+                                    self.occupied_squares[target_square - 8] = 0
+                                    king_pos = self.black_king.search(1)[0]
+
+                                    enemy_attackers_of_king = self.get_attackers_of_target_square(king_pos)
+                                    for pidx in enemy_attackers_of_king.search(1):
+                                        if self.black_pieces[pidx] == 1:
+                                            enemy_attackers_of_king[pidx] = 0
+
+                                if enemy_attackers_of_king.any():
+                                    legal_passant = False
+                                
+                                if legal_passant:
+                                    legal_encoded_moves.append(encoded_move)
+                                
+                                self.occupied_squares = temp.copy()
+                                
+                            else:
+                                legal_encoded_moves.append(encoded_move)
 
         return legal_encoded_moves
     

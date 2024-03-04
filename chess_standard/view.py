@@ -15,7 +15,7 @@ SQUARE_SIZE = SCREEN_HEIGHT // BOARD_COLS  # Ensure the board fits exactly into 
 LIGHT_COLOR = arcade.color.WHEAT
 DARK_COLOR = arcade.color.BURLYWOOD
 
-fen = 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1'
+fen = '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1'
 
 class ChessGame(arcade.Window):
     def __init__(self):
@@ -30,18 +30,18 @@ class ChessGame(arcade.Window):
             self.board.set_fen_gamestate(fen)
 
         self.textures = {
-            'P': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/wP.png'),
-            'R': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/wR.png'),
-            'N': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/wN.png'),
-            'B': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/wB.png'),
-            'Q': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/wQ.png'),
-            'K': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/wK.png'),
-            'p': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/bP.png'),
-            'r': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/bR.png'),
-            'n': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/bN.png'),
-            'b': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/bB.png'),
-            'q': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/bQ.png'),
-            'k': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/bK.png'),
+            'P': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/wP.png'),
+            'R': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/wR.png'),
+            'N': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/wN.png'),
+            'B': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/wB.png'),
+            'Q': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/wQ.png'),
+            'K': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/wK.png'),
+            'p': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/bP.png'),
+            'r': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/bR.png'),
+            'n': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/bN.png'),
+            'b': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/bB.png'),
+            'q': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/bQ.png'),
+            'k': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/bK.png'),
             '.': None
         }
         self.game_state_array = self.board.visualize_current_gamestate()

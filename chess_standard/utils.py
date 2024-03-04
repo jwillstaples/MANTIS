@@ -197,13 +197,13 @@ def decode_fen_string(fen):
                 piece_bitboards[char][pos_idx] = 1
                 col_idx += 1
 
-    if castling[0] == 'K':
+    if 'K' in castling:
         castling_rights[0] = 1
-    if castling[1] == 'Q':
+    if 'Q' in castling:
         castling_rights[1] = 1
-    if castling[2] == 'k':
+    if 'k' in castling:
         castling_rights[2] = 1
-    if castling[3] == 'q':
+    if 'q' in castling:
         castling_rights[3] = 1
 
 
