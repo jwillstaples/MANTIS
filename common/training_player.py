@@ -10,7 +10,7 @@ class TrainingPlayer:
         mcts_iter: int,
         old_exists: bool,
         SAVE_DIR: str,
-        multicore: bool,
+        multicore: int,
         Net: Type[nn.Module],
         Board: Type[BlankBoard],
     ):
@@ -19,7 +19,7 @@ class TrainingPlayer:
             Monte Carlo Tree Search Iterations,
             If a file named old.py exists
             Current Saving Directory
-            If multiple processors are allowed
+            Number of Processers
             Net Class
             Board Class
         """

@@ -16,7 +16,7 @@ class SerialPlayer(TrainingPlayer):
         mcts_iter: int,
         old_exists: bool,
         SAVE_DIR: str,
-        multicore: bool,
+        multicore: int,
         Net: Type[nn.Module],
         Board: Type[BlankBoard],
     ):
