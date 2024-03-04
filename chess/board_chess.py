@@ -132,7 +132,8 @@ class BoardChess(BlankBoard):
         # Initialize game state variables
         self.move_history = []
         self.white_move = white_move # 1 = White's move, -1 = Black's move
-        self.turn_counter = 0
+        self.halfmove_counter = 0
+        self.fullmove_counter = 1
 
         self.en_passant_target_pos_idx = -1
         self.castling_rights = ones(4, endian='little') # [White Kingside, White Queenside, Black Kingside, Black Queenside], 1 = True
@@ -141,6 +142,9 @@ class BoardChess(BlankBoard):
         self.no_moves_left = False
         self.checkmate = False
         self.game_over = False
+
+        # FULL HISTORY
+        self.gamestate_history = []
     
 
     # ----------------------------------- BOARD UPDATE METHODS ------------------------------------------------------------------------------------------------------
@@ -156,9 +160,45 @@ class BoardChess(BlankBoard):
         i.e., pawn is going from second to last to last rank or whatever the fuck castling rules are
         need to make a method to obtain set of legal moves also
         '''
+        gamestate_before_move = {
+            'encoded_move': encoded_move,
+            # GAME STATE VARS
+            'move_history': self.move_history.copy(),
+            'white_move': self.white_move,
+            'halfmove_counter': self.halfmove_counter,
+            'fullmove_counter': self.fullmove_counter,
+            'en_passant_target_pos_idx': self.en_passant_target_pos_idx,
+            'castling_rights': self.castling_rights.copy(),
+            'in_check': self.in_check,
+            'no_moves_left': self.no_moves_left,
+            'checkmate': self.checkmate,
+            'game_over': self.game_over,
+            # PIECE BITBOARDS
+            'white_pawns': self.white_pawns.copy(),
+            'white_rooks': self.white_rooks.copy(),
+            'white_knights': self.white_knights.copy(),
+            'white_bishops': self.white_bishops.copy(),
+            'white_queens': self.white_queens.copy(),
+            'white_king': self.white_king.copy(),
+            'black_pawns': self.black_pawns.copy(),
+            'black_rooks': self.black_rooks.copy(),
+            'black_knights': self.black_knights.copy(),
+            'black_bishops': self.black_bishops.copy(),
+            'black_queens': self.black_queens.copy(),
+            'black_king': self.black_king.copy(),
+            # OVERALL BITBOARDS
+            'white_pieces': self.white_pieces.copy(),
+            'black_pieces': self.black_pieces.copy(),
+            'occupied_squares': self.occupied_squares.copy(),
+            'empty_squares': self.empty_squares.copy()
+        }
+        self.gamestate_history.append(gamestate_before_move)
+
+
         origin_square, target_square, promotion_piece_type, special_move_flag = decode_move(encoded_move)
-        print(f'MOVE CHOSEN: LERF origin = {origin_square ^ 56}, LERF target = {target_square ^ 56}, promo piece = {promotion_piece_type}, special = {special_move_flag}')
-        
+        # print(f'MOVE CHOSEN: LERF origin = {origin_square ^ 56}, LERF target = {target_square ^ 56}, promo piece = {promotion_piece_type}, special = {special_move_flag}')
+        piece_captured = False
+
         piece_type = self.get_piece_of_square(origin_square)
         
         algebraic_notation_move = []
@@ -184,6 +224,7 @@ class BoardChess(BlankBoard):
                     algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                 else:
                     algebraic_notation_move.append('x')
+                piece_captured = True
                 
             # CHECK IF MOVE OPENS WHITE UP TO GETTING EN PASSANT'ED
             if (
@@ -238,6 +279,7 @@ class BoardChess(BlankBoard):
 
                 algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                 algebraic_notation_move.append(algebraic_target_square)
+                piece_captured = True
 
             elif special_move_flag == 3: # CASTLING MOVE
                 origin_bitboard[target_square] = 1
@@ -251,9 +293,10 @@ class BoardChess(BlankBoard):
                     self.white_rooks[origin_square - 1] = 1
                     algebraic_notation_move = '0-0-0'
                 
-            # threaten_bitboard = self.get_attack_ray_of_target_square(target_square, piece_type)
-            # if threaten_bitboard[self.black_king.search(1)[0]] == 1:
-            #     algebraic_notation_move.append('+')
+            if piece_type == 'P' or piece_captured:
+                self.halfmove_counter = 0
+            else:
+                self.halfmove_counter += 1
 
         elif self.white_move == -1:
             origin_bitboard = self.black_piece_bitboards[piece_type]
@@ -267,6 +310,7 @@ class BoardChess(BlankBoard):
                     algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                 else:
                     algebraic_notation_move.append('x')
+                piece_captured = True
 
             # CHECK IF MOVE OPENS BLACK UP TO GETTING EN PASSANT'ED
             if (
@@ -323,6 +367,7 @@ class BoardChess(BlankBoard):
 
                 algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                 algebraic_notation_move.append(algebraic_target_square)
+                piece_captured = True
 
             elif special_move_flag == 3: # CASTLING MOVE
                 origin_bitboard[target_square] = 1
@@ -336,21 +381,45 @@ class BoardChess(BlankBoard):
                     self.black_rooks[origin_square - 1] = 1
                     algebraic_notation_move = '0-0-0'
 
-            # threaten_bitboard = self.get_attack_ray_of_target_square(target_square, piece_type)
-            # if threaten_bitboard[self.white_king.search(1)[0]] == 1:
-            #     algebraic_notation_move.append('+')
+            if piece_type == 'p' or piece_captured:
+                self.halfmove_counter = 0
+            else:
+                self.halfmove_counter += 1
 
 
         # UPDATE THE GAME STATE AND CHECK FOR CONDITIONS
         self.update_gamestate()
+        self.update_conditions(target_square)
 
         game_score = ''
+
+        if self.game_over:
+            if self.checkmate:
+                if self.white_move == 1:
+                    game_score = '0-1'
+                elif self.white_move == -1:
+                    game_score = '1-0'
+                algebraic_notation_move.append('#')
+            elif self.check:
+                algebraic_notation_move.append('+')
+            elif self.game_over:
+                game_score = '1/2-1/2'
+                
+        self.move_history.append(''.join(algebraic_notation_move))
+        if game_score:
+            self.move_history.append(game_score)
+        
+            
+    def update_conditions(self, prior_move):
         next_moves = self.get_legal_moves()
+
+        # SET NO MOVES LEFT FLAG
         if len(next_moves) == 0:
             self.no_moves_left = True
         else:
             self.no_moves_left = False
 
+        # SET CHECK FLAG
         if self.white_move == 1:
             self.in_check = False
             king_pos = self.white_king.search(1)[0]
@@ -358,7 +427,7 @@ class BoardChess(BlankBoard):
             for pidx in enemy_attackers_of_king.search(1):
                 if self.white_pieces[pidx] == 1:
                     enemy_attackers_of_king[pidx] = 0
-                elif pidx == target_square:
+                elif pidx == prior_move or prior_move == 'FEN':
                     self.in_check = True
         elif self.white_move == -1:
             self.in_check = False
@@ -367,46 +436,161 @@ class BoardChess(BlankBoard):
             for pidx in enemy_attackers_of_king.search(1):
                 if self.black_pieces[pidx] == 1:
                     enemy_attackers_of_king[pidx] = 0
-                elif pidx == target_square:
+                elif pidx == prior_move or prior_move == 'FEN':
                     self.in_check = True
         
-        if self.in_check and self.no_moves_left: # checkmate
+        # CASE 1 (CHECKMATE): in check, no moves left
+        if self.in_check and self.no_moves_left:
             self.checkmate = True
             self.game_over = True
-            algebraic_notation_move.append('#')
-            if self.white_move == 1:
-                game_score = '0-1'
-            elif self.white_move == -1:
-                game_score = '1-0'
-        elif self.in_check and not self.no_moves_left: # check, can still play
-            self.check = False
+
+        # CASE 2 (CHECK): in check, have moves left
+        elif self.in_check and not self.no_moves_left:
             self.checkmate = False
             self.game_over = False
-            algebraic_notation_move.append('+')
+        
+        # CASE 3 (STALEMATE): not in check, no moves left
         elif not self.in_check and self.no_moves_left: # no moves left, stalemate/draw
             self.checkmate = False
             self.game_over = True
-            game_score = '1/2-1/2'
+        
+        # ELSE: not in check, have moves left
         else:
             self.check = False
             self.checkmate = False
             self.game_over = False
 
-        self.move_history.append(''.join(algebraic_notation_move))
-        if game_score:
-            self.move_history.append(game_score)
-            
-            
+
+    def unmake_move(self):
+        if not self.gamestate_history:
+            return
+        
+        state_before_move = self.gamestate_history.pop()
+
+        unmade_move = state_before_move['encoded_move']
+
+        # GAME STATE VARS
+        self.move_history = state_before_move['move_history'].copy()
+        self.white_move = state_before_move['white_move']
+        self.halfmove_counter = state_before_move['halfmove_counter']
+        self.fullmove_counter = state_before_move['fullmove_counter']
+
+        self.en_passant_target_pos_idx = state_before_move['en_passant_target_pos_idx']
+        self.castling_rights = state_before_move['castling_rights']
+
+        self.in_check = state_before_move['in_check']
+        self.no_moves_left = state_before_move['no_moves_left']
+        self.checkmate = state_before_move['checkmate']
+        self.game_over = state_before_move['game_over']
+
+        # PIECE BITBOARDS
+        self.white_pawns = state_before_move['white_pawns'].copy()
+        self.white_rooks = state_before_move['white_rooks'].copy()
+        self.white_knights = state_before_move['white_knights'].copy()
+        self.white_bishops = state_before_move['white_bishops'].copy()
+        self.white_queens = state_before_move['white_queens'].copy()
+        self.white_king = state_before_move['white_king'].copy()
+
+        self.black_pawns = state_before_move['black_pawns'].copy()
+        self.black_rooks = state_before_move['black_rooks'].copy()
+        self.black_knights = state_before_move['black_knights'].copy()
+        self.black_bishops = state_before_move['black_bishops'].copy()
+        self.black_queens = state_before_move['black_queens'].copy()
+        self.black_king = state_before_move['black_king'].copy()
+
+        self.white_piece_bitboards = {
+            'P': self.white_pawns, 
+            'R': self.white_rooks, 
+            'N': self.white_knights, 
+            'B': self.white_bishops, 
+            'Q': self.white_queens, 
+            'K': self.white_king
+        }
+        self.black_piece_bitboards = {
+            'p': self.black_pawns, 
+            'r': self.black_rooks, 
+            'n': self.black_knights, 
+            'b': self.black_bishops, 
+            'q': self.black_queens, 
+            'k': self.black_king
+        }
+
+        # OVERALL BITBOARDS
+        self.white_pieces = state_before_move['white_pieces'].copy()
+        self.black_pieces = state_before_move['black_pieces'].copy()
+        self.occupied_squares = state_before_move['occupied_squares'].copy()
+        self.empty_squares = state_before_move['empty_squares'].copy()
+
+
     def update_gamestate(self):
         self.white_pieces = self.white_pawns | self.white_knights | self.white_bishops | self.white_rooks | self.white_queens | self.white_king
         self.black_pieces = self.black_pawns | self.black_knights | self.black_bishops | self.black_rooks | self.black_queens | self.black_king
         self.occupied_squares = self.white_pieces | self.black_pieces
         self.empty_squares = ~self.occupied_squares
+        if self.white_move == -1:
+            self.fullmove_counter += 1
         self.white_move *= -1
-        self.turn_counter += 1
         # print(f'White Kingside Castling: {self.castling_rights[0]}, White Queenside Castling: {self.castling_rights[1]}, Black Kingside Castling: {self.castling_rights[2]}, Black Queenside Castling: {self.castling_rights[3]}')
 
-    
+
+    def set_fen_gamestate(self, fen):
+        '''
+        fen is a VALID fen string
+        '''
+        fen_gamestate = decode_fen_string(fen)
+        piece_bitboards = fen_gamestate['piece_bitboards']
+
+        # GAME STATE VARS
+        self.move_history = []
+        self.gamestate_history = []
+        self.white_move = fen_gamestate['white_move']
+        self.halfmove_counter = fen_gamestate['halfmove_counter']
+        self.fullmove_counter = fen_gamestate['fullmove_counter']
+
+        self.en_passant_target_pos_idx = fen_gamestate['en_passant_target_pos_idx']
+        self.castling_rights = fen_gamestate['castling_rights']
+
+        self.update_conditions(prior_move='FEN')
+
+        # PIECE BITBOARDS
+        self.white_pawns = piece_bitboards['P'].copy()
+        self.white_rooks = piece_bitboards['R'].copy()
+        self.white_knights = piece_bitboards['N'].copy()
+        self.white_bishops = piece_bitboards['B'].copy()
+        self.white_queens = piece_bitboards['Q'].copy()
+        self.white_king = piece_bitboards['K'].copy()
+
+        self.black_pawns = piece_bitboards['p'].copy()
+        self.black_rooks = piece_bitboards['r'].copy()
+        self.black_knights = piece_bitboards['n'].copy()
+        self.black_bishops = piece_bitboards['b'].copy()
+        self.black_queens = piece_bitboards['q'].copy()
+        self.black_king = piece_bitboards['k'].copy()
+
+        self.white_piece_bitboards = {
+            'P': self.white_pawns, 
+            'R': self.white_rooks, 
+            'N': self.white_knights, 
+            'B': self.white_bishops, 
+            'Q': self.white_queens, 
+            'K': self.white_king
+        }
+        self.black_piece_bitboards = {
+            'p': self.black_pawns, 
+            'r': self.black_rooks, 
+            'n': self.black_knights, 
+            'b': self.black_bishops, 
+            'q': self.black_queens, 
+            'k': self.black_king
+        }
+
+        # OVERALL BITBOARDS
+        self.white_pieces = self.white_pawns | self.white_knights | self.white_bishops | self.white_rooks | self.white_queens | self.white_king
+        self.black_pieces = self.black_pawns | self.black_knights | self.black_bishops | self.black_rooks | self.black_queens | self.black_king
+        self.occupied_squares = self.white_pieces | self.black_pieces
+        self.empty_squares = ~self.occupied_squares
+
+
     def visualize_current_gamestate(self):
         white_symbols = {1: 'P', 2: 'R', 3: 'N', 4: 'B', 5: 'Q', 6: 'K'}
         black_symbols = {1: 'p', 2: 'r', 3: 'n', 4: 'b', 5: 'q', 6: 'k'}
@@ -433,12 +617,45 @@ class BoardChess(BlankBoard):
             table.add_row(row)
             
         if self.white_move == 1:
-            print(f'\nTurn: {self.turn_counter} | White to Move')
+            turn_text = 'White'
         elif self.white_move == -1:
-            print(f'\nTurn: {self.turn_counter} | Black to Move')
+            turn_text = 'Black'
+        
+        castling_text = ''
+        if self.castling_rights[0] == 1:
+            castling_text += ('K')
+        else:
+            castling_text += ('-')
+        if self.castling_rights[1] == 1:
+            castling_text += ('Q')
+        else:
+            castling_text += ('-')
+        if self.castling_rights[2] == 1:
+            castling_text += ('k')
+        else:
+            castling_text += ('-')
+        if self.castling_rights[3] == 1:
+            castling_text += ('q')
+        else:
+            castling_text += ('-')
+
+        if self.en_passant_target_pos_idx != -1:
+            en_passant_filerank = pos_idx_to_filerank(self.en_passant_target_pos_idx)
+        else:
+            en_passant_filerank = 'No en passant can be made'
+
+        print(f'white_move = {self.white_move} | {turn_text}\'s turn to play')
+        print(f'halfmove_counter = {self.halfmove_counter} | fullmove_counter = {self.fullmove_counter}')
+        print(f'en_passant_target_pos_idx = {self.en_passant_target_pos_idx} | {en_passant_filerank}')
+        print(f'castling_rights = {self.castling_rights} | {castling_text}')
+        print(f'in_check = {self.in_check}')
+        print(f'no_moves_left = {self.no_moves_left}')
+        print(f'checkmate = {self.checkmate}')
+        print(f'game_over = {self.game_over}')
+
         print(f'Move History: {self.move_history}\n')
         print(table)
-        print('')
+        print('\n')
 
         return game_state_array
 
@@ -466,10 +683,13 @@ class BoardChess(BlankBoard):
     
     def get_numpy_white(self):
         np_board = np.zeros(64, dtype=int)
-            
-        for i, piece_bitboard in enumerate(self.white_piece_bitboards.values()):
-            np_bitboard = lerf_bitboard_to_1D_numpy(piece_bitboard)
-            np_board[np_bitboard == 1] = i + 1
+        
+        np_board[self.white_pawns.search(1)] = 1
+        np_board[self.white_rooks.search(1)] = 2
+        np_board[self.white_knights.search(1)] = 3
+        np_board[self.white_bishops.search(1)] = 4
+        np_board[self.white_queens.search(1)] = 5
+        np_board[self.white_king.search(1)] = 6
             
         return np_board.reshape((8, 8))
     
@@ -477,9 +697,12 @@ class BoardChess(BlankBoard):
     def get_numpy_black(self):
         np_board = np.zeros(64, dtype=int)
             
-        for i, piece_bitboard in enumerate(self.black_piece_bitboards.values()):
-            np_bitboard = lerf_bitboard_to_1D_numpy(piece_bitboard)
-            np_board[np_bitboard == 1] = i + 1
+        np_board[self.black_pawns.search(1)] = 1
+        np_board[self.black_rooks.search(1)] = 2
+        np_board[self.black_knights.search(1)] = 3
+        np_board[self.black_bishops.search(1)] = 4
+        np_board[self.black_queens.search(1)] = 5
+        np_board[self.black_king.search(1)] = 6
             
         return np_board.reshape((8, 8))
     
@@ -765,6 +988,7 @@ class BoardChess(BlankBoard):
         '''
         piece_type = self.get_piece_of_square(origin_square)
         files = 'abcdefgh'
+        exclusive_inclusive_ray = zeros(64, endian='little')
 
         if piece_type in ['R', 'B', 'Q', 'r', 'b', 'q']:
             filerank_o = pos_idx_to_filerank(origin_square)
@@ -775,8 +999,6 @@ class BoardChess(BlankBoard):
 
             occupied_plus_target = self.occupied_squares.copy()
             occupied_plus_target[target_square] = 1
-
-            exclusive_inclusive_ray = zeros(64, endian='little')
 
             if piece_type == 'R' or piece_type == 'r':
                 if file_o == file_t and int(rank_o) < int(rank_t): # NORTH RAY
@@ -914,7 +1136,7 @@ class BoardChess(BlankBoard):
             temp_s = 'White'
         elif self.white_move == -1:
             temp_s = 'Black'
-        print(f'Number of pieces attacking the {temp_s} king: {num_attackers}')
+        # print(f'Number of pieces attacking the {temp_s} king: {num_attackers}')
 
 
         # CONVERTING MOVES

@@ -1,7 +1,7 @@
 import numpy as np
 
 from bitarray import bitarray
-from bitarray.util import ba2int, int2ba, pprint
+from bitarray.util import ba2int, int2ba, zeros
 
 
 def hex_to_bitarray(hex_string, endian='little'):
@@ -158,3 +158,60 @@ def getBishopRayAttacks(bishop_rays, occupied_squares, dir4, pos_idx):
         attacks ^= bishop_rays[dir4][nearest_blocker_pos_idx]
     
     return attacks
+
+
+def decode_fen_string(fen):
+    fen_gamestate = {}
+    pieces, active_color, castling, en_passant, halfmove, fullmove = fen.split(' ')
+
+    piece_bitboards = {
+        'P': zeros(64, endian='little'),
+        'R': zeros(64, endian='little'), 
+        'N': zeros(64, endian='little'),
+        'B': zeros(64, endian='little'),
+        'Q': zeros(64, endian='little'),
+        'K': zeros(64, endian='little'),
+        'p': zeros(64, endian='little'),
+        'r': zeros(64, endian='little'),
+        'n': zeros(64, endian='little'),
+        'b': zeros(64, endian='little'),
+        'q': zeros(64, endian='little'),
+        'k': zeros(64, endian='little'),
+    }
+    white_move = 1 if active_color == 'w' else -1
+    castling_rights = zeros(4, endian='little')
+    en_passant_target_pos_idx = filerank_to_pos_idx(en_passant) if en_passant != '-' else -1
+    halfmove_counter = int(halfmove)
+    fullmove_counter = int(fullmove)
+    
+    # Mapping FEN rows (reversed because FEN starts from rank 8 to rank 1)
+    rows = pieces.split('/')
+    for row_idx, row in enumerate(rows):
+        col_idx = 0
+        for char in row:
+            if char.isdigit():
+                col_idx += int(char)  # Skip empty squares
+            else:
+                lerf_idx = (7 - row_idx) * 8 + col_idx
+                pos_idx = lerf_idx ^ 56
+                piece_bitboards[char][pos_idx] = 1
+                col_idx += 1
+
+    if castling[0] == 'K':
+        castling_rights[0] = 1
+    if castling[1] == 'Q':
+        castling_rights[1] = 1
+    if castling[2] == 'k':
+        castling_rights[2] = 1
+    if castling[3] == 'q':
+        castling_rights[3] = 1
+
+
+    fen_gamestate['white_move'] = white_move
+    fen_gamestate['halfmove_counter'] = halfmove_counter
+    fen_gamestate['fullmove_counter'] = fullmove_counter
+    fen_gamestate['en_passant_target_pos_idx'] = en_passant_target_pos_idx
+    fen_gamestate['castling_rights'] = castling_rights
+    fen_gamestate['piece_bitboards'] = piece_bitboards
+
+    return fen_gamestate

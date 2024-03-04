@@ -15,6 +15,8 @@ SQUARE_SIZE = SCREEN_HEIGHT // BOARD_COLS  # Ensure the board fits exactly into 
 LIGHT_COLOR = arcade.color.WHEAT
 DARK_COLOR = arcade.color.BURLYWOOD
 
+fen = 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1'
+
 class ChessGame(arcade.Window):
     def __init__(self):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
@@ -23,6 +25,10 @@ class ChessGame(arcade.Window):
 
     def setup(self):
         self.board = BoardChess(white_move=1)
+
+        if fen:
+            self.board.set_fen_gamestate(fen)
+
         self.textures = {
             'P': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/wP.png'),
             'R': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess/static/wR.png'),
