@@ -11,7 +11,6 @@ import arcade
 from connect4.view import C4Game
 
 
-
 def bot_v_bot():
     game_board = BoardC4.from_start()
     result = 2
@@ -21,7 +20,7 @@ def bot_v_bot():
 
     bot = MantisC4("old.pt", runs=1000)
     bot2 = MantisC4("data6/net4.pt", True)
-    
+
     print(game_board)
 
     while result == 2:
