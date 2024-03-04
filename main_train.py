@@ -22,14 +22,14 @@ if __name__ == "__main__":
     START_ITERATION = 69
     old_exists = True
 
-    # MAX_ITERATIONS = 1
-    # EPOCHS_PER_ITERATION = 1
-    # NUM_GENERATED = 6
-    # BATCH_SIZE = 1
-    # GAMES_TO_EVAL = 6
-    # MCTS_ITER = 50
-    # START_ITERATION = 0
-    # old_exists = False
+    MAX_ITERATIONS = 1
+    EPOCHS_PER_ITERATION = 1
+    NUM_GENERATED = 6
+    BATCH_SIZE = 1
+    GAMES_TO_EVAL = 6
+    MCTS_ITER = 50
+    START_ITERATION = 0
+    old_exists = False
 
     SAVE_DIR = "data7"
     multicore = True
@@ -41,6 +41,7 @@ if __name__ == "__main__":
 
     train(
         player,
+        Net,
         MAX_ITERATIONS,
         EPOCHS_PER_ITERATION,
         NUM_GENERATED,

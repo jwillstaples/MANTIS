@@ -6,37 +6,28 @@ from common.training_util import save_idxs
 # FOR GOOGLE COLAB RUNNING
 import sys
 
-from connect4.c4net import C4Net
-
 # sys.path.append("/content/drive/My Drive/bot")
 # sys.path.append("/content/drive/My Drive/bot/connect4")
 # sys.path.append("/content/drive/My Drive/bot/common")
 sys.path.append("/home/jovyan/work/MANTIS")
 sys.path.append("C:\\Users\\xiayi\\Desktop\\1. Duke University Classes\\MANTIS")
 
-from common.mcts import mcts
-from common.pmcts import Parallel_MCTS
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from connect4.board_c4 import BoardC4, print_board
-from torch.utils.data import Dataset, DataLoader
-
+from typing import Type
+from torch.utils.data import DataLoader
 from tqdm import tqdm
-import numpy as np
 
 import os
-
-import torch.multiprocessing as mp
-from torch.multiprocessing import Queue, Process, Value
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def train(
     player: TrainingPlayer,
+    Net: Type[nn.Module], 
     MAX_ITERATIONS,
     EPOCHS_PER_ITERATION,
     NUM_GENERATED,
@@ -46,23 +37,6 @@ def train(
     old_exists,
     SAVE_DIR,
 ):
-    # MAX_ITERATIONS = 1000
-    # EPOCHS_PER_ITERATION = 50
-    # NUM_GENERATED = 200
-    # BATCH_SIZE = 15
-    # GAMES_TO_EVAL = 30
-    # START_ITERATION = 69
-    # old_exists = True
-    # SAVE_DIR = "data7"
-
-    # MAX_ITERATIONS = 1
-    # EPOCHS_PER_ITERATION = 1
-    # NUM_GENERATED = 6
-    # BATCH_SIZE = 1
-    # GAMES_TO_EVAL = 6
-    # START_ITERATION = 0
-    # old_exists = False
-
     for i in range(START_ITERATION, MAX_ITERATIONS):
         net, dataset, idxs = player.generate_self_games(NUM_GENERATED)
 
@@ -87,7 +61,7 @@ def train(
                 loss.backward()
                 optimizer.step()
 
-        old_net = C4Net().to(device)
+        old_net = Net().to(device)
         if old_exists:
             old_net.load_state_dict(torch.load("old.pt"))
 
