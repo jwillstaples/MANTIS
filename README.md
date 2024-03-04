@@ -60,3 +60,7 @@ Parallel in Parallel, tree passing: 2.5 sec / game
 #### 3
 * Elliot
 * Will
+
+
+
+Looking at the training, parallel and serial, there is a position with a mate in 1, the p_vec does not return 1, instead looking at the value score is not exactly 1 or -1.

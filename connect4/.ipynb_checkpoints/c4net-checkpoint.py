@@ -96,7 +96,6 @@ def test2():
         p, v = net(rand)
     print(f"time: {time.time() - st}")
 
-
 # test()
 
 # test2()

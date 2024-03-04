@@ -7,15 +7,14 @@ from common.mcts import mcts
 
 
 class MantisC4(BlankPlayer):
-    def __init__(self, fp, random=False, runs=500):
+    def __init__(self, fp):
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.runs = runs
+
         self.net = C4Net()
-        if not random:
-            self.net.load_state_dict(torch.load(fp, map_location=device))
+        self.net.load_state_dict(torch.load(fp, map_location=device))
 
         self.net.eval()
 
     def move(self, board: BoardC4):
-        board, _, _, _ = mcts(board, self.net, runs=self.runs)
+        board, _, _, _ = mcts(board, self.net, runs=1000)
         return board

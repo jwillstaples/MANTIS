@@ -4,6 +4,7 @@ import time
 
 
 if __name__ == "__main__":
+
     file = "data2/e41.npy"
     move_arr = np.load(file)
 
@@ -11,6 +12,7 @@ if __name__ == "__main__":
     print(game_board)
 
     for move in move_arr:
+
         time.sleep(0.5)
 
         game_board = game_board.move_from_int(move)

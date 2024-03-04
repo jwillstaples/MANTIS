@@ -18,20 +18,17 @@ class C4Piece:
 
 
 class C4Game(arcade.Window):
-    def __init__(self, width, height):
+    def __init__(self, width, height, fp):
         super().__init__(width, height, "Connect 4")
         arcade.set_background_color(arcade.color.WHITE)
         self.pieces = []
         self.selected = -1  # which column player selected
+        self.fp = fp
 
     def setup(self):
         self.board = BoardC4.from_start()
         self.result = 2
-        # self.bot = OracleC4(depth=4)
-        # nnet = TestNet()
-        # self.bot = PlayerC4(nnet)
-
-        self.bot = MantisC4("old.pt")
+        self.bot = MantisC4(self.fp)
 
     def on_draw(self):
         self.clear()
@@ -107,13 +104,3 @@ class C4Game(arcade.Window):
             arcade.Window.close(self)
         if 100 < x < 800:
             self.selected = (x - 100) // 100
-
-
-def main():
-    game = C4Game(SCREEN_WIDTH, SCREEN_HEIGHT)
-    game.setup()
-    arcade.run()
-
-
-if __name__ == "__main__":
-    main()
