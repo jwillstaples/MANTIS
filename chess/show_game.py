@@ -9,6 +9,21 @@ from chess.board_chess import BoardChess
 def simulate_human_vs_human(board, num_moves):
     exit_program = False
 
+    symbols = {
+        'P': 'White Pawn',
+        'R': 'White Rook',
+        'N': 'White Knight',
+        'B': 'White Bishop',
+        'Q': 'White Queen',
+        'K': 'White King',
+        'p': 'Black Pawn',
+        'r': 'Black Rook',
+        'n': 'Black Knight',
+        'b': 'Black Bishop',
+        'q': 'Black Queen',
+        'k': 'Black King'
+    }
+
     for _ in range(num_moves):
         # PRINT CURRENT TURN'S GAME STATE
         _ = board.visualize_current_gamestate()
@@ -19,7 +34,7 @@ def simulate_human_vs_human(board, num_moves):
         elif board.white_move == -1:
             print('\nAvailable Moves for Black (format = origin -> target)')
         
-        encoded_moves = board.get_pseudolegal_moves()
+        encoded_moves = board.get_legal_moves()
         for i, test_move in enumerate(encoded_moves):
             origin_square, target_square, promotion_piece_type, special_move_flag = decode_move(test_move)
 
@@ -62,6 +77,12 @@ def simulate_human_vs_human(board, num_moves):
                     algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                     algebraic_notation_move.append(algebraic_target_square)
                     algebraic_notation_move.append(' e.p.')
+                
+                elif special_move_flag == 3: # CASTLING MOVE
+                    if target_square > origin_square: # KINGSIDE CASTLING
+                        algebraic_notation_move = ['0-0']
+                    elif target_square < origin_square: # QUEENSIDE CASTLING
+                        algebraic_notation_move = ['0-0-0']
 
             elif board.white_move == -1:
                 target_bitboard = board.get_bitboard_of_square(target_square)
@@ -91,8 +112,14 @@ def simulate_human_vs_human(board, num_moves):
                     algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                     algebraic_notation_move.append(algebraic_target_square)
                     algebraic_notation_move.append(' e.p.')
+                
+                elif special_move_flag == 3: # CASTLING MOVE
+                    if target_square > origin_square: # KINGSIDE CASTLING
+                        algebraic_notation_move = ['0-0']
+                    elif target_square < origin_square: # QUEENSIDE CASTLING
+                        algebraic_notation_move = ['0-0-0']
 
-            print(f'Input [{i:>2}] - {"".join(prior)} -> {"".join(algebraic_notation_move)}')
+            print(f'Input [{i:>2}] - {symbols[piece_type]} moves {"".join(prior)} -> {"".join(algebraic_notation_move)}')
         
         # SELECT AN INDEX 
         while True:

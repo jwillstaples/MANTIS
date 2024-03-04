@@ -2,7 +2,7 @@
 import numpy as np
 
 from prettytable import PrettyTable
-from bitarray.util import zeros
+from bitarray.util import zeros, ones
 
 from common.board import BlankBoard
 from chess.utils import *
@@ -133,7 +133,9 @@ class BoardChess(BlankBoard):
         self.move_history = []
         self.white_move = white_move # 1 = White's move, -1 = Black's move
         self.turn_counter = 0
+
         self.en_passant_target_pos_idx = -1
+        self.castling_rights = ones(4, endian='little') # [White Kingside, White Queenside, Black Kingside, Black Queenside], 1 = True
 
         self.in_check = False
         self.no_moves_left = False
@@ -196,6 +198,16 @@ class BoardChess(BlankBoard):
             else:
                 self.en_passant_target_pos_idx = -1
 
+            # CHECK IF MOVE REMOVES CASTLING RIGHTS FOR WHITE
+            # PIECE TYPE IS A KING, OR A ROOK.
+            if piece_type == 'K': # IF KING, REMOVE BOTH CASTLING RIGHTS ON FIRST MOVE
+                self.castling_rights[0] = 0
+                self.castling_rights[1] = 0
+            elif piece_type == 'R': # IF ROOK, DETERMINE WHICH SIDE AND REMOVE
+                if origin_square == (7 ^ 56): # FIRST MOVE OF KINGSIDE ROOK
+                    self.castling_rights[0] = 0
+                elif origin_square == (0 ^ 56): # FIRST MOVE OF QUEENSIDE ROOK
+                    self.castling_rights[1] = 0
 
             # HANDLE SPECIAL FLAGS
             if special_move_flag == 0: # REGULAR MOVE
@@ -226,7 +238,19 @@ class BoardChess(BlankBoard):
 
                 algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                 algebraic_notation_move.append(algebraic_target_square)
-            
+
+            elif special_move_flag == 3: # CASTLING MOVE
+                origin_bitboard[target_square] = 1
+                if target_square > origin_square: # KINGSIDE CASTLING
+                    self.white_rooks[origin_square + 3] = 0
+                    self.white_rooks[origin_square + 1] = 1
+                    algebraic_notation_move = '0-0'
+
+                elif target_square < origin_square: # QUEENSIDE CASTLING
+                    self.white_rooks[origin_square - 4] = 0
+                    self.white_rooks[origin_square - 1] = 1
+                    algebraic_notation_move = '0-0-0'
+                
             # threaten_bitboard = self.get_attack_ray_of_target_square(target_square, piece_type)
             # if threaten_bitboard[self.black_king.search(1)[0]] == 1:
             #     algebraic_notation_move.append('+')
@@ -256,6 +280,18 @@ class BoardChess(BlankBoard):
             # OTHERWISE, RESET WHITE'S POTENTIAL EN PASSANT TARGET POS IDX
             else:
                 self.en_passant_target_pos_idx = -1
+
+
+            # CHECK IF MOVE REMOVES CASTLING RIGHTS FOR BLACK
+            # PIECE TYPE IS A KING, OR A ROOK.
+            if piece_type == 'k': # IF KING, REMOVE BOTH CASTLING RIGHTS ON FIRST MOVE
+                self.castling_rights[2] = 0
+                self.castling_rights[3] = 0
+            elif piece_type == 'r': # IF ROOK, DETERMINE WHICH SIDE AND REMOVE
+                if origin_square == (63 ^ 56): # FIRST MOVE OF KINGSIDE ROOK
+                    self.castling_rights[2] = 0
+                elif origin_square == (56 ^ 56): # FIRST MOVE OF QUEENSIDE ROOK
+                    self.castling_rights[3] = 0
 
 
             # HANDLE SPECIAL FLAGS
@@ -288,6 +324,17 @@ class BoardChess(BlankBoard):
                 algebraic_notation_move.append(f'{algebraic_origin_square[0]}x')
                 algebraic_notation_move.append(algebraic_target_square)
 
+            elif special_move_flag == 3: # CASTLING MOVE
+                origin_bitboard[target_square] = 1
+                if target_square > origin_square: # KINGSIDE CASTLING
+                    self.black_rooks[origin_square + 3] = 0
+                    self.black_rooks[origin_square + 1] = 1
+                    algebraic_notation_move = '0-0'
+
+                elif target_square < origin_square: # QUEENSIDE CASTLING
+                    self.black_rooks[origin_square - 4] = 0
+                    self.black_rooks[origin_square - 1] = 1
+                    algebraic_notation_move = '0-0-0'
 
             # threaten_bitboard = self.get_attack_ray_of_target_square(target_square, piece_type)
             # if threaten_bitboard[self.white_king.search(1)[0]] == 1:
@@ -357,6 +404,7 @@ class BoardChess(BlankBoard):
         self.empty_squares = ~self.occupied_squares
         self.white_move *= -1
         self.turn_counter += 1
+        # print(f'White Kingside Castling: {self.castling_rights[0]}, White Queenside Castling: {self.castling_rights[1]}, Black Kingside Castling: {self.castling_rights[2]}, Black Queenside Castling: {self.castling_rights[3]}')
 
     
     def visualize_current_gamestate(self):
@@ -385,10 +433,10 @@ class BoardChess(BlankBoard):
             table.add_row(row)
             
         if self.white_move == 1:
-            print(f'Turn: {self.turn_counter} | White to Move')
+            print(f'\nTurn: {self.turn_counter} | White to Move')
         elif self.white_move == -1:
-            print(f'Turn: {self.turn_counter} | Black to Move')
-        print(f'Move History: {self.move_history}')
+            print(f'\nTurn: {self.turn_counter} | Black to Move')
+        print(f'Move History: {self.move_history}\n')
         print(table)
         print('')
 
@@ -862,7 +910,11 @@ class BoardChess(BlankBoard):
         
         num_attackers = len(enemy_attackers_of_king.search(1))
 
-        print(f'Number of attackers: {num_attackers}')
+        if self.white_move == 1:
+            temp_s = 'White'
+        elif self.white_move == -1:
+            temp_s = 'Black'
+        print(f'Number of pieces attacking the {temp_s} king: {num_attackers}')
 
 
         # CONVERTING MOVES
@@ -872,19 +924,66 @@ class BoardChess(BlankBoard):
 
             # KING MOVES
             if moving_piece_type == 'K' or moving_piece_type == 'k':
-                attackers = self.get_attackers_of_target_square(target_square)
+                if special_move_flag == 3: # CASTLING KING MOVES LEGAL CHECK
+                    # 1.) King is not in check
+                    # 2.) King does not cross over, or finish on a threatened square
+                    if num_attackers == 0:
+                        if target_square > origin_square: # KINGSIDE CASTLING
+                            safe_castle = True
 
-                if self.white_move == 1: # filter out friendly "attackers"
-                    for pidx in attackers.search(1):
-                        if self.white_pieces[pidx] == 1:
-                            attackers[pidx] = 0
-                elif self.white_move == -1:
-                    for pidx in attackers.search(1):
-                        if self.black_pieces[pidx] == 1:
-                            attackers[pidx] = 0
+                            for castling_square in range(origin_square+1, target_square+1):
+                                attackers = self.get_attackers_of_target_square(castling_square)
+                            
+                                if self.white_move == 1: # filter out friendly "attackers"
+                                    for pidx in attackers.search(1):
+                                        if self.white_pieces[pidx] == 1:
+                                            attackers[pidx] = 0
+                                elif self.white_move == -1:
+                                    for pidx in attackers.search(1):
+                                        if self.black_pieces[pidx] == 1:
+                                            attackers[pidx] = 0
+                                
+                                if attackers.any():
+                                    safe_castle = False
+                            
+                            if safe_castle:
+                                legal_encoded_moves.append(encoded_move)
 
-                if not attackers.any(): # there does not exist a piece that attacks target_square
-                    legal_encoded_moves.append(encoded_move) # i.e., can move the King there
+                        elif target_square < origin_square: # QUEENSIDE CASTLING
+                            safe_castle = True
+
+                            for castling_square in range(origin_square-1, target_square-1, -1):
+                                attackers = self.get_attackers_of_target_square(castling_square)
+                            
+                                if self.white_move == 1: # filter out friendly "attackers"
+                                    for pidx in attackers.search(1):
+                                        if self.white_pieces[pidx] == 1:
+                                            attackers[pidx] = 0
+                                elif self.white_move == -1:
+                                    for pidx in attackers.search(1):
+                                        if self.black_pieces[pidx] == 1:
+                                            attackers[pidx] = 0
+                                
+                                if attackers.any():
+                                    safe_castle = False
+                            
+                            if safe_castle:
+                                legal_encoded_moves.append(encoded_move)
+
+                else: # ALL OTHER KING MOVES
+                    attackers = self.get_attackers_of_target_square(target_square)
+
+                    if self.white_move == 1: # filter out friendly "attackers"
+                        for pidx in attackers.search(1):
+                            if self.white_pieces[pidx] == 1:
+                                attackers[pidx] = 0
+                    elif self.white_move == -1:
+                        for pidx in attackers.search(1):
+                            if self.black_pieces[pidx] == 1:
+                                attackers[pidx] = 0
+
+                    if not attackers.any(): # there does not exist a piece that attacks target_square
+                        legal_encoded_moves.append(encoded_move) # i.e., can move the King there
             
             # ANY OTHER PIECE MOVES
             else:     
@@ -1150,6 +1249,29 @@ class BoardChess(BlankBoard):
                     target_squares.append(pos_idx_to_bitarray(pos_idx - 9, length=6))
 
 
+                # PSEUDOLEGAL!!! CASTLING LOGIC
+                # WHITE KINGSIDE
+                if (
+                    (self.castling_rights[0] == 1) and # white king and kingside white rook have not moved
+                    bool((self.empty_squares[pos_idx + 1] and self.empty_squares[pos_idx + 2])) # empty squares between them
+                ):
+                    encoded_move = zeros(16, endian='big')
+                    encoded_move[0:2] = int2ba(3, 2, endian='big') # CASTLING FLAG = 11
+                    encoded_move[4:10] = pos_idx_to_bitarray(pos_idx + 2, length=6)
+                    encoded_move[10:16] = origin_square
+                    encoded_king_moves.append(encoded_move)
+                # WHITE QUEENSIDE
+                if (
+                    (self.castling_rights[1] == 1) and
+                    bool((self.empty_squares[pos_idx - 1] and self.empty_squares[pos_idx - 2] and self.empty_squares[pos_idx - 3]))
+                ):
+                    encoded_move = zeros(16, endian='big')
+                    encoded_move[0:2] = int2ba(3, 2, endian='big') # CASTLING FLAG = 11
+                    encoded_move[4:10] = pos_idx_to_bitarray(pos_idx - 2, length=6)
+                    encoded_move[10:16] = origin_square
+                    encoded_king_moves.append(encoded_move)
+
+
                 for target_square in target_squares:
                     encoded_move = zeros(16, endian='big')
                     encoded_move[4:10] = target_square
@@ -1206,6 +1328,29 @@ class BoardChess(BlankBoard):
                     bool((self.empty_squares[pos_idx - 9] or self.white_pieces[pos_idx - 9]))
                 ):
                     target_squares.append(pos_idx_to_bitarray(pos_idx - 9, length=6))
+
+
+                # PSEUDOLEGAL!!! CASTLING LOGIC
+                # BLACK KINGSIDE
+                if (
+                    (self.castling_rights[2] == 1) and # black king and kingside white rook have not moved
+                    bool((self.empty_squares[pos_idx + 1]) and self.empty_squares[pos_idx + 2]) # empty squares between them
+                ):
+                    encoded_move = zeros(16, endian='big')
+                    encoded_move[0:2] = int2ba(3, 2, endian='big') # CASTLING FLAG = 11
+                    encoded_move[4:10] = pos_idx_to_bitarray(pos_idx + 2, length=6)
+                    encoded_move[10:16] = origin_square
+                    encoded_king_moves.append(encoded_move)
+                # BLACK QUEENSIDE
+                if (
+                    (self.castling_rights[3] == 1) and
+                    bool((self.empty_squares[pos_idx - 1] and self.empty_squares[pos_idx - 2] and self.empty_squares[pos_idx - 3]))
+                ):
+                    encoded_move = zeros(16, endian='big')
+                    encoded_move[0:2] = int2ba(3, 2, endian='big') # CASTLING FLAG = 11
+                    encoded_move[4:10] = pos_idx_to_bitarray(pos_idx - 2, length=6)
+                    encoded_move[10:16] = origin_square
+                    encoded_king_moves.append(encoded_move)
 
 
                 for target_square in target_squares:

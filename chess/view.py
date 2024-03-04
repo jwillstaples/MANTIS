@@ -346,6 +346,8 @@ class ChessGame(arcade.Window):
                             encoded_move = zeros(16, endian='big')
                             if self.valid_moves[filerank] == 2:
                                 encoded_move[0:2] = int2ba(2, 2, endian='big')
+                            elif self.valid_moves[filerank] == 3:
+                                encoded_move[0:2] = int2ba(3, 2, endian='big')
                             encoded_move[4:10] = pos_idx_to_bitarray(filerank_to_pos_idx(self.target_square), length=6)
                             encoded_move[10:16] = pos_idx_to_bitarray(filerank_to_pos_idx(self.origin_square), length=6)
 
