@@ -1517,6 +1517,7 @@ class BoardChess(BlankBoard):
                 # WHITE KINGSIDE
                 if (
                     (self.castling_rights[0] == 1) and # white king and kingside white rook have not moved
+                    (self.white_rooks[7 ^ 56] == 1) and
                     bool((self.empty_squares[pos_idx + 1] and self.empty_squares[pos_idx + 2])) # empty squares between them
                 ):
                     encoded_move = zeros(16, endian='big')
@@ -1527,6 +1528,7 @@ class BoardChess(BlankBoard):
                 # WHITE QUEENSIDE
                 if (
                     (self.castling_rights[1] == 1) and
+                    (self.white_rooks[0 ^ 56] == 1) and
                     bool((self.empty_squares[pos_idx - 1] and self.empty_squares[pos_idx - 2] and self.empty_squares[pos_idx - 3]))
                 ):
                     encoded_move = zeros(16, endian='big')
@@ -1598,6 +1600,7 @@ class BoardChess(BlankBoard):
                 # BLACK KINGSIDE
                 if (
                     (self.castling_rights[2] == 1) and # black king and kingside white rook have not moved
+                    (self.black_rooks[63 ^ 56] == 1) and
                     bool((self.empty_squares[pos_idx + 1]) and self.empty_squares[pos_idx + 2]) # empty squares between them
                 ):
                     encoded_move = zeros(16, endian='big')
@@ -1608,6 +1611,7 @@ class BoardChess(BlankBoard):
                 # BLACK QUEENSIDE
                 if (
                     (self.castling_rights[3] == 1) and
+                    (self.black_rooks[56 ^ 56] == 1) and
                     bool((self.empty_squares[pos_idx - 1] and self.empty_squares[pos_idx - 2] and self.empty_squares[pos_idx - 3]))
                 ):
                     encoded_move = zeros(16, endian='big')
