@@ -997,7 +997,7 @@ class BoardChess(BlankBoard):
             file_o, rank_o = filerank_o[0], filerank_o[1]
             file_t, rank_t = filerank_t[0], filerank_t[1]
 
-            occupied_plus_target = self.occupied_squares.copy()
+            occupied_plus_target = zeros(64, endian='little')
             occupied_plus_target[target_square] = 1
 
             if piece_type == 'R' or piece_type == 'r':
@@ -1239,8 +1239,11 @@ class BoardChess(BlankBoard):
                         if pinned_piece_bitboard[origin_square] == 1: # if a pinned piece, can only move along the pinned ray
                             attacker_pos_idx = pinned_piece_dict[origin_square] # get idx of the attacking piece that is pinning the move piece
                             attacker_ray_bitboard = self.get_between_source_target_ray(attacker_pos_idx, king_pos)
+                            # lerf_bitboard_to_2D_numpy(attacker_ray_bitboard)
 
-                            if attacker_ray_bitboard[target_square] == 1: # if the move is within the ray, it's legal, otherwise not legal
+                            if target_square == attacker_pos_idx:
+                                legal_encoded_moves.append(encoded_move)
+                            elif attacker_ray_bitboard[target_square] == 1: # if the move is within the ray, it's legal, otherwise not legal
                                 legal_encoded_moves.append(encoded_move)
 
                         else: # if not pinned, pseudolegal = legal as long as it's not fucking en passant

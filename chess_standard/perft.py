@@ -200,7 +200,7 @@ def perft_divide(board, depth):
 
 if __name__ == '__main__':
     fpath = 'C:\\Users\\Elliot\\Desktop\\MANTIS\\MANTIS\\chess_standard\\perft_tests.txt'
-    depth = 2
+    depth = 4
     
     fen_strings = []
     titles = []
@@ -213,8 +213,8 @@ if __name__ == '__main__':
                 if fen:
                     fen_strings.append(fen)
 
-    fen_strings = [fen_strings[2]]
-    titles = [titles[2]]
+    # fen_strings = [fen_strings[5]]
+    # titles = [titles[5]]
 
     for i, fen in enumerate(fen_strings):
         # print(fen)
