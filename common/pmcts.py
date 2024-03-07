@@ -7,6 +7,8 @@ from common.mcts import select, add_dirichlet, get_board, Node, get_output
 
 import time
 
+from common.training_util import BENCHMARK_FILE, append_to_recent_key
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -19,7 +21,11 @@ class Parallel_MCTS:
         first_boards: List[BlankBoard],
         passed_trees: List[Node],
         finished_games: List[bool],
+        benchmark: bool,
+        telemetry: bool,
     ):
+        self.benchmark = benchmark
+        self.telemetry = telemetry
         self.first_boards = first_boards
         self.net = net
         self.runs = np.array([runs] * games)
@@ -125,5 +131,11 @@ class Parallel_MCTS:
                     vals[i] = values
                     next_trees[i] = self.trees[i].children[indices[i]]
         et = time.time() - st
-        # print(f"Tot: {et}, f: {ppt}, percent = {ppt/et*100}%")
+
+        if self.benchmark and self.telemetry:
+            with open(BENCHMARK_FILE, "a") as f:
+                f.write(
+                    f"Total Time: {round(et, 3)}, Forward Time: {round(ppt, 3)}, F/T = {round(ppt/et*100, 2)}%\n"
+                )
+                append_to_recent_key("percent_forward", ppt / et * 100)
         return self.first_boards, boards, vals, indices, next_trees

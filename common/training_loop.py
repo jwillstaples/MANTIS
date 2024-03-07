@@ -36,6 +36,7 @@ def train(
     START_ITERATION,
     old_exists,
     SAVE_DIR,
+    TEMP_NAME,
 ):
     for i in range(START_ITERATION, MAX_ITERATIONS):
         net, dataset, idxs = player.generate_self_games(NUM_GENERATED)
@@ -63,7 +64,7 @@ def train(
 
         old_net = Net().to(device)
         if old_exists:
-            old_net.load_state_dict(torch.load("old.pt"))
+            old_net.load_state_dict(torch.load(TEMP_NAME))
 
         fp = os.path.join(SAVE_DIR, f"net{i}.pt")
         torch.save(net.state_dict(), fp)
@@ -77,5 +78,5 @@ def train(
         print(f"with result w: {res[0]}, d: {res[1]}, l: {res[2]}")
         if score > 0:
             print("...Saving...")
-            torch.save(net.state_dict(), "old.pt")
+            torch.save(net.state_dict(), TEMP_NAME)
             old_exists = True

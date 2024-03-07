@@ -10,6 +10,7 @@ class TrainingPlayer:
         mcts_iter: int,
         old_exists: bool,
         SAVE_DIR: str,
+        TEMP_NAME: str,
         multicore: int,
         Net: Type[nn.Module],
         Board: Type[BlankBoard],
@@ -26,6 +27,7 @@ class TrainingPlayer:
         self.mcts_iter = mcts_iter
         self.old_exists = old_exists
         self.save_dir = SAVE_DIR
+        self.temp_name = TEMP_NAME
         self.multicore = multicore
         self.Net = Net
         self.Board = Board

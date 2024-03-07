@@ -6,11 +6,15 @@ from common.training_player import TrainingPlayer
 from common.training_util import GameDataset, save_idxs
 from typing import Type
 import torch.nn as nn
+import json
+import time
 
-
+import torch.multiprocessing as mp
 from torch.multiprocessing import Queue, Process, Value
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+LOG_FILE = "manual.json"
 
 
 class ParallelPlayer(TrainingPlayer):
@@ -19,11 +23,16 @@ class ParallelPlayer(TrainingPlayer):
         mcts_iter: int,
         old_exists: bool,
         SAVE_DIR: str,
+        TEMP_NAME: str,
         multicore: int,
         Net: Type[nn.Module],
         Board: Type[BlankBoard],
+        benchmark=False,
     ):
-        super().__init__(mcts_iter, old_exists, SAVE_DIR, multicore, Net, Board)
+        super().__init__(
+            mcts_iter, old_exists, SAVE_DIR, TEMP_NAME, multicore, Net, Board
+        )
+        self.benchmark = benchmark
 
     def generate_self_games(self, num):
         if self.multicore > 1:
@@ -33,6 +42,9 @@ class ParallelPlayer(TrainingPlayer):
     def generate_eval_games(
         self, num, iteration, candidate_net, old_net, candidate_net_file
     ):
+        if self.benchmark:  # SKIP EVALUATION
+            return 0, [0, 0, 0]
+
         if self.multicore > 1:
             return self.parallel_eval(
                 num, iteration, candidate_net, old_net, candidate_net_file
@@ -67,6 +79,8 @@ class ParallelPlayer(TrainingPlayer):
                 first_boards=games,
                 passed_trees=current_trees,
                 finished_games=finished,
+                benchmark=self.benchmark,
+                telemetry=telemetry,
             )
             first_boards, moves, mpis, midxs, mcurrent_trees = mcts.play()
             turn = 1 if turn == 0 else 0
@@ -102,28 +116,39 @@ class ParallelPlayer(TrainingPlayer):
 
     def serial_self_play(self, num):
         net = self.Net().to(device)
-        if not self.old_exists:
-            net.load_state_dict(torch.load("old.pt", map_location=torch.device(device)))
+        if self.old_exists:
+            net.load_state_dict(
+                torch.load(self.temp_name, map_location=torch.device(device))
+            )
         net.eval()
 
         all_data, idxs = self.play_games_in_parallel(
-            num, net, net, self_play=True, desc="SP"
+            num, net, net, self_play=True, telemetry=True, desc="SP"
         )
 
         return net, GameDataset(all_data), idxs
 
     def parallel_self_play(self, num):
         net = self.Net().to(device)
-        if not self.old_exists:
-            net.load_state_dict(torch.load("old.pt", map_location=torch.device(device)))
+        if self.old_exists:
+            net.load_state_dict(
+                torch.load(self.temp_name, map_location=torch.device(device))
+            )
         net.eval()
 
         queues = [Queue() for _ in range(self.multicore - 1)]
         stop_sigs = [Value("i", 0) for _ in range(self.multicore - 1)]
 
-        processes = [Process(
-            target=self.self_play_games_wrapper, args=(stop_sigs[i], queues[i], num, True)
-        ) for i in range(self.multicore - 1)]
+        with open(LOG_FILE, "w") as file:
+            json.dump({"status": "started"}, file, indent=4)
+
+        processes = [
+            mp.Process(
+                target=self.self_play_games_wrapper,
+                args=(stop_sigs[i], queues[i], num, True),
+            )
+            for i in range(self.multicore - 1)
+        ]
 
         [process.start() for process in processes]
 
@@ -131,31 +156,44 @@ class ParallelPlayer(TrainingPlayer):
             num, net, net, self_play=True, telemetry=True, desc="SP"
         )
 
-        while (
-            not all(stop_sig.value == 0 for stop_sig in stop_sigs)
-        ): 
-            continue
-            
+        while not all(stop_sig.value == 1 for stop_sig in stop_sigs):
+            with open(LOG_FILE, "r") as file:
+                data = json.load(file)
+
+            if data["status"] == "stop":
+                for stop_sig in stop_sigs:
+                    print(stop_sig)
+                    print(stop_sig.value)
+                break
+            st = time.time()
+            while time.time() - st < 5:
+                continue
+
         [process.join(timeout=1) for process in processes]
 
         for queue in queues:
             proc_data = queue.get()
             all_data.extend(proc_data)
-        
+            del queue
+
         return net, GameDataset(all_data), idxs
 
     def self_play_games_wrapper(self, stop_sig, queue, num, self_play):
         # may not be able to pass the network into the new function because it can't be pickled
 
         net = self.Net().to(device)
-        if not self.old_exists:
-            net.load_state_dict(torch.load("old.pt", map_location=torch.device(device)))
+        if self.old_exists:
+            net.load_state_dict(
+                torch.load(self.temp_name, map_location=torch.device(device))
+            )
         net.eval()
 
         print("Parallel Start")
         all_data, _ = self.play_games_in_parallel(num, net, net, self_play, desc="SP")
-        queue.put(all_data)
+        queue.put(all_data, block=False)
+        queue.put(None, block=False)
         stop_sig.value = 1
+        print("Parallel End")
 
     def serial_eval(self, num, iteration, net, old_net):
         score = 0
@@ -238,7 +276,7 @@ class ParallelPlayer(TrainingPlayer):
 
         old_net = self.Net().to(device)
         if self.old_exists:
-            old_net.load_state_dict(torch.load("old.pt"))
+            old_net.load_state_dict(torch.load(self.temp_name))
 
         b_results, _ = self.play_games_in_parallel(
             GAMES_TO_EVAL // 2, old_net, net, False

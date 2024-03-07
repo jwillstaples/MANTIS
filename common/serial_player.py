@@ -16,6 +16,7 @@ class SerialPlayer(TrainingPlayer):
         mcts_iter: int,
         old_exists: bool,
         SAVE_DIR: str,
+        TEMP_NAME: str,
         multicore: int,
         Net: Type[nn.Module],
         Board: Type[BlankBoard],
@@ -23,12 +24,16 @@ class SerialPlayer(TrainingPlayer):
         """
         Note: Multicore not used
         """
-        super().__init__(mcts_iter, old_exists, SAVE_DIR, multicore, Net, Board)
+        super().__init__(
+            mcts_iter, old_exists, SAVE_DIR, TEMP_NAME, multicore, Net, Board
+        )
 
     def generate_self_games(self, num):
         net = self.Net().to(device)
-        if not self.old_exists:
-            net.load_state_dict(torch.load("old.pt", map_location=torch.device(device)))
+        if self.old_exists:
+            net.load_state_dict(
+                torch.load(self.temp_name, map_location=torch.device(device))
+            )
         net.eval()
         all_data = []
         for _ in tqdm(range(num), desc="self play..."):

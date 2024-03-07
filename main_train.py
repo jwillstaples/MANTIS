@@ -32,12 +32,15 @@ if __name__ == "__main__":
     old_exists = False
 
     SAVE_DIR = "data7"
+    TEMP_NAME = "old.pt"
     multicore = 2
     Net = C4Net
     Board = BoardC4
 
-    # player = SerialPlayer(MCTS_ITER, old_exists, SAVE_DIR, multicore, Net, Board)
-    player = ParallelPlayer(MCTS_ITER, old_exists, SAVE_DIR, multicore, Net, Board)
+    # player = SerialPlayer(MCTS_ITER, old_exists, SAVE_DIR, TEMP_NAME, multicore, Net, Board)
+    player = ParallelPlayer(
+        MCTS_ITER, old_exists, SAVE_DIR, TEMP_NAME, multicore, Net, Board
+    )
 
     train(
         player,
@@ -50,4 +53,5 @@ if __name__ == "__main__":
         START_ITERATION,
         old_exists,
         SAVE_DIR,
+        TEMP_NAME,
     )
