@@ -1,5 +1,7 @@
 MANTIS
 
+We're creating the first 2v2 chess (Bughouse) engine, by developing a reinforcement learning framework, iterated on existing ML architectures.
+
 Helpful Links:
 
 FreeCodeCamp implementing AlphaZero from scratch:
