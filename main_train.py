@@ -20,16 +20,16 @@ if __name__ == "__main__":
     GAMES_TO_EVAL = 30
     MCTS_ITER = 500
     START_ITERATION = 69
-    old_exists = True
-
-    MAX_ITERATIONS = 1
-    EPOCHS_PER_ITERATION = 1
-    NUM_GENERATED = 6
-    BATCH_SIZE = 1
-    GAMES_TO_EVAL = 6
-    MCTS_ITER = 50
-    START_ITERATION = 0
     old_exists = False
+
+    # MAX_ITERATIONS = 1
+    # EPOCHS_PER_ITERATION = 1
+    # NUM_GENERATED = 6
+    # BATCH_SIZE = 1
+    # GAMES_TO_EVAL = 6
+    # MCTS_ITER = 50
+    # START_ITERATION = 0
+    # old_exists = False
 
     SAVE_DIR = "data7"
     TEMP_NAME = "old.pt"
