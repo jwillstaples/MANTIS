@@ -199,7 +199,7 @@ def perft_divide(board, depth):
 
 
 if __name__ == '__main__':
-    fpath = 'C:\\Users\\Elliot\\Desktop\\MANTIS\\MANTIS\\chess_standard\\perft_tests.txt'
+    fpath = 'chess_standard/perft_tests.txt'
     depth = 3
     
     fen_strings = []
