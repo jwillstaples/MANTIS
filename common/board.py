@@ -9,8 +9,8 @@ class BlankBoard:
         pass
 
     @abc.abstractmethod
-    def get_legal_moves(self) -> List["BlankBoard"]:
-        """Returns board instances representing each legal move"""
+    def legal_moves(self) -> np.ndarray:
+        """Returns a binary mask of length 7 for C4, 1858 for chess that represents the legal moves"""
         pass
 
     @abc.abstractmethod
