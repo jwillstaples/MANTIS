@@ -29,19 +29,20 @@ class ChessGame(arcade.Window):
         if fen:
             self.board.set_fen_gamestate(fen)
 
+
         self.textures = {
-            'P': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/wP.png'),
-            'R': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/wR.png'),
-            'N': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/wN.png'),
-            'B': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/wB.png'),
-            'Q': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/wQ.png'),
-            'K': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/wK.png'),
-            'p': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/bP.png'),
-            'r': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/bR.png'),
-            'n': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/bN.png'),
-            'b': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/bB.png'),
-            'q': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/bQ.png'),
-            'k': arcade.load_texture('C:/Users/Elliot/Desktop/MANTIS/MANTIS/chess_standard/static/bK.png'),
+            'P': arcade.load_texture('chess_standard/static/wP.png'),
+            'R': arcade.load_texture('chess_standard/static/wR.png'),
+            'N': arcade.load_texture('chess_standard/static/wN.png'),
+            'B': arcade.load_texture('chess_standard/static/wB.png'),
+            'Q': arcade.load_texture('chess_standard/static/wQ.png'),
+            'K': arcade.load_texture('chess_standard/static/wK.png'),
+            'p': arcade.load_texture('chess_standard/static/bP.png'),
+            'r': arcade.load_texture('chess_standard/static/bR.png'),
+            'n': arcade.load_texture('chess_standard/static/bN.png'),
+            'b': arcade.load_texture('chess_standard/static/bB.png'),
+            'q': arcade.load_texture('chess_standard/static/bQ.png'),
+            'k': arcade.load_texture('chess_standard/static/bK.png'),
             '.': None
         }
         self.game_state_array = self.board.visualize_current_gamestate()
