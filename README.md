@@ -7,6 +7,11 @@ Helpful Links:
 FreeCodeCamp implementing AlphaZero from scratch:
 https://www.youtube.com/watch?v=wuSQpLinRB4
 
+# VM shit
+https://ssh.cloud.google.com/v2/ssh/projects/mantis-415520/zones/us-central1-a/instances/instance-20240319-165546?authuser=0&hl=en_US&projectNumber=1032060796269&useAdminProxy=true
+10.128.0.3
+34.72.28.14
+
 ## Visioning Presentation
 
 P1 - Ashrit
