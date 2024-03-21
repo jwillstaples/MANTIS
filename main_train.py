@@ -1,3 +1,5 @@
+from chess_standard.board_chess_pypi import BoardPypiChess
+from chess_standard.chessnet import ChessNet
 from common.parallel_player import ParallelPlayer
 from common.serial_player import SerialPlayer
 from common.training_loop import train
@@ -19,7 +21,7 @@ if __name__ == "__main__":
     BATCH_SIZE = 15
     GAMES_TO_EVAL = 30
     MCTS_ITER = 500
-    START_ITERATION = 69
+    START_ITERATION = 1
     old_exists = False
 
     # MAX_ITERATIONS = 1
@@ -33,9 +35,9 @@ if __name__ == "__main__":
 
     SAVE_DIR = "data7"
     TEMP_NAME = "old.pt"
-    multicore = 2
-    Net = C4Net
-    Board = BoardC4
+    multicore = 4
+    Net = ChessNet
+    Board = BoardPypiChess
 
     # player = SerialPlayer(MCTS_ITER, old_exists, SAVE_DIR, TEMP_NAME, multicore, Net, Board)
     player = ParallelPlayer(
