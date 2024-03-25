@@ -261,15 +261,20 @@ class BoardPypiChess(BlankBoard):
         return cls()
 
     def legal_moves(self) -> np.ndarray:
-        """Returns a binary mask of length 7 for C4, OUTPUT_LENGTH for chess that represents the legal moves"""
-        legals = self.board.legal_moves
+    """Returns a binary mask of length 7 for C4, OUTPUT_LENGTH for chess that represents the legal moves"""
+    legals = self.board.legal_moves
 
-        ucis = [m.uci() for m in legals]
+    ucis = [m.uci() for m in legals]
 
-        array = np.zeros((OUTPUT_LENGTH,))
-        for uci in ucis:
+    array = np.zeros((OUTPUT_LENGTH,))
+    for uci in ucis:
+        if uci in UCI_MAP:  # Check if the UCI move exists in the map
             array[UCI_MAP[uci]] = 1
-        return array
+        else:
+            # Handle the invalid UCI string appropriately, e.g., log an error
+            print(f"Invalid UCI string encountered: {uci}")
+    return array
+
 
     def terminal_eval(self) -> int:
         """
