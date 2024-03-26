@@ -238,7 +238,7 @@ UCI_ARRAY = ["a1b1",  "a1c1",  "a1d1",  "a1e1",  "a1f1",  "a1g1",  "a1h1",  "a1a
     "g7g8b", "g7h8q", "g7h8r", "g7h8b", "h7g8q", "h7g8r", "h7g8b", "h7h8q",
     "h7h8r", "h7h8b", "a7a8n", "a7b8n", "b7a8n", "b7b8n", "b7c8n", "c7c8n",
     "c7b8n", "c7d8n", "d7c8n", "d7d8n", "d7e8n", "e7d8n", "e7e8n", "e7f8n",
-    "f7e8n", "f7f8n", "f7g8n", "g7f8n", "g7g8n", "g7h8n", "h7g8n", "h7h8n"      
+    "f7e8n", "f7f8n", "f7g8n", "g7f8n", "g7g8n", "g7h8n", "h7g8n", "h7h8n",      
     'a2a1q', 'a2a1r', 'a2a1b', 'a2b1q', 'a2b1r', 'a2b1b', 'b2a1q', 'b2a1r',
     'b2a1b', 'b2b1q', 'b2b1r', 'b2b1b', 'b2c1q', 'b2c1r', 'b2c1b', 'c2b1q',
     'c2b1r', 'c2b1b', 'c2c1q', 'c2c1r', 'c2c1b', 'c2d1q', 'c2d1r', 'c2d1b',
