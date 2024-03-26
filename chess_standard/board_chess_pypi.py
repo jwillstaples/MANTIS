@@ -238,18 +238,7 @@ UCI_ARRAY = ["a1b1",  "a1c1",  "a1d1",  "a1e1",  "a1f1",  "a1g1",  "a1h1",  "a1a
     "g7g8b", "g7h8q", "g7h8r", "g7h8b", "h7g8q", "h7g8r", "h7g8b", "h7h8q",
     "h7h8r", "h7h8b", "a7a8n", "a7b8n", "b7a8n", "b7b8n", "b7c8n", "c7c8n",
     "c7b8n", "c7d8n", "d7c8n", "d7d8n", "d7e8n", "e7d8n", "e7e8n", "e7f8n",
-    "f7e8n", "f7f8n", "f7g8n", "g7f8n", "g7g8n", "g7h8n", "h7g8n", "h7h8n",      
-    'a2a1q', 'a2a1r', 'a2a1b', 'a2b1q', 'a2b1r', 'a2b1b', 'b2a1q', 'b2a1r',
-    'b2a1b', 'b2b1q', 'b2b1r', 'b2b1b', 'b2c1q', 'b2c1r', 'b2c1b', 'c2b1q',
-    'c2b1r', 'c2b1b', 'c2c1q', 'c2c1r', 'c2c1b', 'c2d1q', 'c2d1r', 'c2d1b',
-    'd2c1q', 'd2c1r', 'd2c1b', 'd2d1q', 'd2d1r', 'd2d1b', 'd2e1q', 'd2e1r',
-    'd2e1b', 'e2d1q', 'e2d1r', 'e2d1b', 'e2e1q', 'e2e1r', 'e2e1b', 'e2f1q',
-    'e2f1r', 'e2f1b', 'f2e1q', 'f2e1r', 'f2e1b', 'f2f1q', 'f2f1r', 'f2f1b',
-    'f2g1q', 'f2g1r', 'f2g1b', 'g2f1q', 'g2f1r', 'g2f1b', 'g2g1q', 'g2g1r',
-    'g2g1b', 'g2h1q', 'g2h1r', 'g2h1b', 'h2g1q', 'h2g1r', 'h2g1b', 'h2h1q',
-    'h2h1r', 'h2h1b', 'a2a1n', 'a2b1n', 'b2a1n', 'b2b1n', 'b2c1n', 'c2c1n',
-    'c2b1n', 'c2d1n', 'd2c1n', 'd2d1n', 'd2e1n', 'e2d1n', 'e2e1n', 'e2f1n',
-    'f2e1n', 'f2f1n', 'f2g1n', 'g2f1n', 'g2g1n', 'g2h1n', 'h2g1n', 'h2h1n']
+    "f7e8n", "f7f8n", "f7g8n", "g7f8n", "g7g8n", "g7h8n", "h7g8n", "h7h8n"]
 
 
 OUTPUT_LENGTH = len(UCI_ARRAY)
