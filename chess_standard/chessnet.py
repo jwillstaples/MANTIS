@@ -7,6 +7,7 @@ import time
 
 from chess_standard.board_chess_pypi import OUTPUT_LENGTH
 
+
 class ChessNet(nn.Module):
     def __init__(self):
         super().__init__()
@@ -99,6 +100,6 @@ def test2():
     print(f"time: {time.time() - st}")
 
 
-# test() 
+# test()
 
 # test2()

@@ -1,5 +1,6 @@
-import numpy as np 
-from matplotlib import pyplot as plt 
+import numpy as np
+from matplotlib import pyplot as plt
 
-if __name__ == "__main__": 
-    pass 
+
+if __name__ == "__main__":
+    pass

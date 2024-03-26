@@ -66,9 +66,11 @@ class Parallel_MCTS:
         """
         tensors = torch.stack(
             [
-                board.to_tensor()
-                if board is not None
-                else torch.randn(self.board_shape)
+                (
+                    board.to_tensor()
+                    if board is not None
+                    else torch.randn(self.board_shape)
+                )
                 for board in boards
             ],
             dim=0,

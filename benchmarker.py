@@ -38,7 +38,7 @@ if __name__ == "__main__":
     cores = [1, 2, 4, 8]
     Net = ChessNet
     Board = BoardPypiChess
-    
+
     with open(BENCHMARK_FILE, "w") as f:
         f.write(f"Start of Benchmarking\n")
 
