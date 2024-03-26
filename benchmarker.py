@@ -1,3 +1,5 @@
+from chess_standard.board_chess_pypi import BoardPypiChess
+from chess_standard.chessnet import ChessNet
 from common.parallel_player import ParallelPlayer
 from common.training_loop import train
 from common.training_util import (
@@ -34,8 +36,8 @@ if __name__ == "__main__":
     SAVE_DIR = "data_bench"
     TEMP_NAME = "bench.pt"
     cores = [1, 2, 4, 8]
-    Net = C4Net
-    Board = BoardC4
+    Net = ChessNet
+    Board = BoardPypiChess
     
     with open(BENCHMARK_FILE, "w") as f:
         f.write(f"Start of Benchmarking\n")

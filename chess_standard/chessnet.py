@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.nn.init as init
 import time
 
-OUTPUT_LENGTH = 1858
+from chess_standard.board_chess_pypi import OUTPUT_LENGTH
 
 class ChessNet(nn.Module):
     def __init__(self):
