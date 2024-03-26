@@ -240,8 +240,9 @@ UCI_ARRAY = ["a1b1",  "a1c1",  "a1d1",  "a1e1",  "a1f1",  "a1g1",  "a1h1",  "a1a
     "c7b8n", "c7d8n", "d7c8n", "d7d8n", "d7e8n", "e7d8n", "e7e8n", "e7f8n",
     "f7e8n", "f7f8n", "f7g8n", "g7f8n", "g7g8n", "g7h8n", "h7g8n", "h7h8n", 
     "h2g1q", "b2c1q", 'e2f1q', 'e2f1n', 'e2f1b', 'e2f1r', 'a2b1q', 'b2c1r', 
-    'c2d1q', 'f2f1q', 'b2c1b', 'd2c1q', 'd2c1r', 'd2c1n', 'd2c1b']
-
+    'c2d1q', 'f2f1q', 'b2c1b', 'd2c1q', 'd2c1r', 'd2c1n', 'd2c1b',  'g2h1r',
+    'g2h1n', 'g2h1b', 'g2h1q']
+             
 OUTPUT_LENGTH = len(UCI_ARRAY)
 
 UCI_MAP = {s: i for i, s in enumerate(UCI_ARRAY)}
