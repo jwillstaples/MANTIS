@@ -126,7 +126,7 @@ def graph_games(data: np.ndarray):
 
 if __name__ == "__main__":
 
-    filename = "BENCH.txt"
+    filename = "BENCHece.txt"
 
     runs_data = []
     current_block = []
