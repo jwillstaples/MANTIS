@@ -313,20 +313,20 @@ class BoardPypiChess(BlankBoard):
         Returns a tensor that can be passed as input to the neural network
         https://python-chess.readthedocs.io/en/latest/_modules/chess.html#Board.transform
 
-        haven't tested if this works sry it;s 4 am and i have a midterm
-        also are we sure that methods that call self.board (terminal_eval and player_perspective_eval notably) won't make a fucky wucky for flipped perspectives
+        Tested and works as expected
         """
         if self.white_move:
             board_tensor = torch.from_numpy(self.board_to_numpy(self.board)) # white pieces will be positive 1-6 vals, black pieces negative 1-6
-            top_layer = (board_tensor > 0).float()   # white pieces
-            mid_layer = (board_tensor == 0).float()  # empty squares
-            bot_layer = (board_tensor < 0).float()   # black pieces
+            top_layer_mask = (board_tensor > 0).float()   # white mask
+            bot_layer_mask = (board_tensor < 0).float()   # black mask
         else:
-            black_perspective_board = self.board.transform(chess.flip_horizontal()) # .transform(f) returns a NEW board object based on the transformation function, f
+            black_perspective_board = self.board.transform(chess.flip_vertical) # .transform(f) returns a NEW board object based on the transformation function, f
             board_tensor = torch.from_numpy(self.board_to_numpy(black_perspective_board)) # black pieces still negative 1-6, but they start in A1 corner now instead of A8
-            top_layer = (board_tensor < 0).float()   # black pieces
-            mid_layer = (board_tensor == 0).float()  # empty squares
-            bot_layer = (board_tensor > 0).float()   # white pieces
+            top_layer_mask = (board_tensor < 0).float()   # black mask
+            bot_layer_mask = (board_tensor > 0).float()   # white mask
+        top_layer = torch.abs(board_tensor * top_layer_mask)
+        mid_layer = (board_tensor == 0).float()
+        bot_layer = torch.abs(board_tensor * bot_layer_mask)
 
         return torch.stack([top_layer, mid_layer, bot_layer])
 
@@ -359,7 +359,7 @@ class BoardPypiChess(BlankBoard):
         NOTE: In the NP array, index 0 is A1 and index 63 is H8. While this seems intuitive, if you visualize the board,
                 you'd think that it was flipped horizontally, but this is the correct representation.
         """
-        piece_map = self.board.piece_map()
+        piece_map = board.piece_map()
         board_array = np.zeros((8, 8))
 
         # WHITE PIECES ARE POSITIVE
