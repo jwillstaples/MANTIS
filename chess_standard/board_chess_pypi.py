@@ -283,7 +283,7 @@ class BoardPypiChess(BlankBoard):
         """
         if self.board.is_game_over():
             outcome = self.board.outcome()
-            winner = outcome.winner
+            winner = outcome.winner # bool, True = white won, False = black won, None = draw
             if winner == None:
                 return 0
             if winner:
@@ -310,15 +310,26 @@ class BoardPypiChess(BlankBoard):
 
     def to_tensor(self) -> torch.tensor:
         """
-        Returns a tensor that can be inputted to a neural network
+        Returns a tensor that can be passed as input to the neural network
+        https://python-chess.readthedocs.io/en/latest/_modules/chess.html#Board.transform
+
+        haven't tested if this works sry it;s 4 am and i have a midterm
+        also are we sure that methods that call self.board (terminal_eval and player_perspective_eval notably) won't make a fucky wucky for flipped perspectives
         """
-        tb = torch.from_numpy(self.board_to_numpy(self.board))
-        t1 = (tb > 0).float()
-        t0 = (tb == 0).float()
-        tn1 = (tb < 0).float()
         if self.white_move:
-            return torch.stack([t1, t0, tn1])
-        return torch.stack([tn1, t0, t1])
+            board_tensor = torch.from_numpy(self.board_to_numpy(self.board)) # white pieces will be positive 1-6 vals, black pieces negative 1-6
+            top_layer = (board_tensor > 0).float()   # white pieces
+            mid_layer = (board_tensor == 0).float()  # empty squares
+            bot_layer = (board_tensor < 0).float()   # black pieces
+        else:
+            black_perspective_board = self.board.transform(chess.flip_horizontal()) # .transform(f) returns a NEW board object based on the transformation function, f
+            board_tensor = torch.from_numpy(self.board_to_numpy(black_perspective_board)) # black pieces still negative 1-6, but they start in A1 corner now instead of A8
+            top_layer = (board_tensor < 0).float()   # black pieces
+            mid_layer = (board_tensor == 0).float()  # empty squares
+            bot_layer = (board_tensor > 0).float()   # white pieces
+
+        return torch.stack([top_layer, mid_layer, bot_layer])
+
 
     def player_perspective_eval(self) -> int:
         """
