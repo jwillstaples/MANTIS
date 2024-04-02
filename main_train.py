@@ -9,7 +9,7 @@ import torch.multiprocessing as mp
 
 import sys
 
-sys.path.append("/home/jovyan/work/MANTIS")
+sys.path.append("opt/home/contactashrit/MANTIS")
 sys.path.append("C:\\Users\\xiayi\\Desktop\\1. Duke University Classes\\MANTIS")
 
 if __name__ == "__main__":
@@ -23,6 +23,8 @@ if __name__ == "__main__":
     MCTS_ITER = 1500
     START_ITERATION = 1
     old_exists = False
+    CUDA_VISIBLE_DEVICES=0
+    TF_FORCE_GPU_ALLOW_GROWTH = true
 
     # MAX_ITERATIONS = 1
     # EPOCHS_PER_ITERATION = 1
