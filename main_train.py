@@ -5,6 +5,7 @@ from common.serial_player import SerialPlayer
 from common.training_loop import train
 from connect4.board_c4 import BoardC4
 from connect4.c4net import C4Net
+import torch, cuda
 import torch.multiprocessing as mp
 
 import sys
@@ -12,7 +13,11 @@ import sys
 sys.path.append("opt/home/contactashrit/MANTIS")
 sys.path.append("C:\\Users\\xiayi\\Desktop\\1. Duke University Classes\\MANTIS")
 
+
+
 if __name__ == "__main__":
+    print(torch.cuda.is_available())
+
     mp.set_start_method("spawn")
 
     MAX_ITERATIONS = 1000
