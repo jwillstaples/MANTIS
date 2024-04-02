@@ -24,8 +24,7 @@ if __name__ == "__main__":
     START_ITERATION = 1
     old_exists = False
     CUDA_VISIBLE_DEVICES=0
-    TF_FORCE_GPU_ALLOW_GROWTH = true
-
+    TF_FORCE_GPU_ALLOW_GROWTH = True
     # MAX_ITERATIONS = 1
     # EPOCHS_PER_ITERATION = 1
     # NUM_GENERATED = 6
