@@ -5,7 +5,7 @@ from common.serial_player import SerialPlayer
 from common.training_loop import train
 from connect4.board_c4 import BoardC4
 from connect4.c4net import C4Net
-import torch, cuda
+import torch
 import torch.multiprocessing as mp
 
 import sys
