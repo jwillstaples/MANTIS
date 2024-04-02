@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     SAVE_DIR = "data7"
     TEMP_NAME = "old.pt"
-    multicore = 4
+    multicore = 1
     Net = ChessNet
     Board = BoardPypiChess
 
