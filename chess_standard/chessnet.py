@@ -15,7 +15,7 @@ class ChessNet(nn.Module):
             nn.Conv2d(3, 64, kernel_size=3, padding=1), nn.BatchNorm2d(64), nn.ReLU()
         )
 
-        self.backBone = nn.ModuleList([ResBlock(64) for i in range(16)])
+        self.backBone = nn.ModuleList([ResBlock(64) for i in range(3)])
 
         self.policyHead = nn.Sequential(
             nn.Conv2d(64, 32, kernel_size=3, padding=1),

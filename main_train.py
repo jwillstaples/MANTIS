@@ -17,10 +17,10 @@ if __name__ == "__main__":
 
     MAX_ITERATIONS = 1000
     EPOCHS_PER_ITERATION = 50
-    NUM_GENERATED = 200
+    NUM_GENERATED = 100
     BATCH_SIZE = 15
     GAMES_TO_EVAL = 30
-    MCTS_ITER = 1500
+    MCTS_ITER = 1000
     START_ITERATION = 1
     old_exists = False
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     SAVE_DIR = "data7"
     TEMP_NAME = "old.pt"
-    multicore = 4
+    multicore = 2
     Net = ChessNet
     Board = BoardPypiChess
 
