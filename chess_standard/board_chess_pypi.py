@@ -382,3 +382,29 @@ class BoardPypiChess(BlankBoard):
             board_array[row, col] = value
 
         return board_array
+
+    def board_to_perspective(self, board):
+        perspective_board = board.transform(chess.flip_vertical)
+        piece_map = perspective_board.piece_map()
+        board_array = np.zeros((8, 8))
+
+        # WHITE PIECES ARE POSITIVE
+        # BLACK PIECES ARE NEGATIVE
+        # EMPTY SQUARES ARE ZERO
+        piece_to_value = {
+            chess.PAWN: 1,
+            chess.KNIGHT: 2,
+            chess.BISHOP: 3,
+            chess.ROOK: 4,
+            chess.QUEEN: 5,
+            chess.KING: 6,
+        }
+
+        for square, piece in piece_map.items():
+            row, col = divmod(square, 8)
+            value = piece_to_value.get(piece.piece_type, 0)
+            if piece.color == chess.BLACK:
+                value = -value
+            board_array[row, col] = value
+
+        return board_array
