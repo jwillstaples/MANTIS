@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # START_ITERATION = 0
     # old_exists = False
 
-    SAVE_DIR = "data7"
+    SAVE_DIR = "chessdata1"
     TEMP_NAME = "old.pt"
     multicore = 2
     Net = ChessNet

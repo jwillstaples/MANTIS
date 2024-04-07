@@ -69,6 +69,7 @@ class ResBlock(nn.Module):
 
 
 def test():
+    print("start")
     N, ch, R, C = 10, 3, 8, 8
     rand = torch.randn((N, ch, R, C))
     net = ChessNet()
@@ -99,7 +100,5 @@ def test2():
         p, v = net(rand)
     print(f"time: {time.time() - st}")
 
-
-# test()
-
-# test2()
+if __name__ == "__main__":
+    test()
