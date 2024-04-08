@@ -324,9 +324,9 @@ class BoardPypiChess(BlankBoard):
             board_tensor = torch.from_numpy(self.board_to_numpy(black_perspective_board)) # black pieces still negative 1-6, but they start in A1 corner now instead of A8
             top_layer_mask = (board_tensor < 0).float()   # black mask
             bot_layer_mask = (board_tensor > 0).float()   # white mask
-        top_layer = torch.abs(board_tensor * top_layer_mask)
+        top_layer = torch.abs(board_tensor * top_layer_mask).float()
         mid_layer = (board_tensor == 0).float()
-        bot_layer = torch.abs(board_tensor * bot_layer_mask)
+        bot_layer = torch.abs(board_tensor * bot_layer_mask).float()
 
         return torch.stack([top_layer, mid_layer, bot_layer])
 
