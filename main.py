@@ -45,7 +45,7 @@ def bot_v_bot():
 def bot_v_human_C4():
     SCREEN_WIDTH = 900
     SCREEN_HEIGHT = 700
-    game = C4Game(SCREEN_WIDTH, SCREEN_HEIGHT, "old.pt")
+    game = C4Game(SCREEN_WIDTH, SCREEN_HEIGHT, "c4_500mcts_80iter.pt")
     game.setup()
     arcade.run()
 

@@ -69,9 +69,11 @@ class ResBlock(nn.Module):
 
 
 def test():
+    print("start")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     N, ch, R, C = 10, 3, 8, 8
-    rand = torch.randn((N, ch, R, C))
-    net = ChessNet()
+    rand = torch.randn((N, ch, R, C)).to(device)
+    net = ChessNet().to(device)
     p, v = net(rand)
     assert p.shape == torch.Size([N, OUTPUT_LENGTH])
     assert v.shape == torch.Size([N, 1])
@@ -99,7 +101,5 @@ def test2():
         p, v = net(rand)
     print(f"time: {time.time() - st}")
 
-
-# test()
-
-# test2()
+if __name__ == "__main__":
+    test()

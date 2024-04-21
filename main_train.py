@@ -20,8 +20,8 @@ if __name__ == "__main__":
     NUM_GENERATED = 100
     BATCH_SIZE = 15
     GAMES_TO_EVAL = 30
-    MCTS_ITER = 1000
-    START_ITERATION = 1
+    MCTS_ITER = 500
+    START_ITERATION = 0
     old_exists = False
 
     # MAX_ITERATIONS = 1
@@ -33,11 +33,13 @@ if __name__ == "__main__":
     # START_ITERATION = 0
     # old_exists = False
 
-    SAVE_DIR = "data7"
+    SAVE_DIR = "chessdata1"
     TEMP_NAME = "old.pt"
     multicore = 2
     Net = ChessNet
     Board = BoardPypiChess
+    # Net = C4Net
+    # Board = BoardC4
 
     # player = SerialPlayer(MCTS_ITER, old_exists, SAVE_DIR, TEMP_NAME, multicore, Net, Board)
     player = ParallelPlayer(
