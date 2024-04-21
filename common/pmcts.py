@@ -4,7 +4,7 @@ import torch
 from typing import List
 from tqdm import tqdm
 from common.mcts import select, add_dirichlet, get_board, Node, get_output
-
+import threading
 import time
 
 from common.training_util import BENCHMARK_FILE, append_to_recent_key
@@ -78,11 +78,40 @@ class Parallel_MCTS:
         p_vecs, evals = self.net(tensors)
         p_vecs = p_vecs.detach().cpu().numpy()
         evals = evals.detach().cpu().numpy()[:, 0]
+        player_perspective_evals = self.parallel_player_perspective_evals(boards)
         for i, board in enumerate(boards):
-            if board is not None and board.terminal_eval() != 2:
+            if board is not None and player_perspective_evals[i] != 2:
                 p_vecs[i] = None
-                evals[i] = board.player_perspective_eval()
+                evals[i] = player_perspective_evals[i]
         return p_vecs, evals
+    
+    def parallel_player_perspective_evals(self, boards):
+        results = [3] * len(boards)
+        
+        def player_perspective_eval_wrapper(board, index):
+            try:
+                results[index] = board.player_perspective_eval()
+            except:
+                print("Error from the following board")
+                print(board.board)
+
+        threads = []
+
+        for i, board in enumerate(boards):
+            if board is not None:
+                thread = threading.Thread(target=player_perspective_eval_wrapper, args=(board, i))
+                threads.append(thread)
+                thread.start()
+            else:
+                results[i] = 2
+                
+        while 3 in results:
+            continue
+
+        for thread in threads:
+            thread.join(timeout=1)
+        return results
+
 
     def play(self):
         """

@@ -75,6 +75,8 @@ def test():
     assert v.shape == torch.Size([N, 1])
     print("Works!")
 
+# test()
+
 
 def test2():
     times = 200

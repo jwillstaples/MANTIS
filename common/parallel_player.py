@@ -97,6 +97,7 @@ class ParallelPlayer(TrainingPlayer):
                     results[i] = games[i].terminal_eval()
             if telemetry:
                 pbar.update(1)
+                # print(games[0].board)
 
         if not self_play:
             return results, idxs[0]

@@ -1,7 +1,8 @@
 import numpy as np
 import chess
-import torch
 
+import torch
+import requests
 from common.board import BlankBoard
 
 UCI_ARRAY = ["a1b1",  "a1c1",  "a1d1",  "a1e1",  "a1f1",  "a1g1",  "a1h1",  "a1a2",
@@ -261,17 +262,39 @@ class BoardPypiChess(BlankBoard):
     @classmethod
     def from_start(cls):
         return cls()
+    
+    def flip_uci(self, uci):
+        return uci[0] + str(9-int(uci[1])) + uci[2] + str(9 - int(uci[3])) + uci[4:]
 
     def legal_moves(self) -> np.ndarray:
         """Returns a binary mask of length 7 for C4, OUTPUT_LENGTH for chess that represents the legal moves"""
         legals = self.board.legal_moves
-
-        ucis = [m.uci() for m in legals]
+        if self.white_move:
+            ucis = [m.uci() for m in legals]
+        else:
+            ucis = [self.flip_uci(m.uci()) for m in legals]
 
         array = np.zeros((OUTPUT_LENGTH,))
         for uci in ucis:
             array[UCI_MAP[uci]] = 1
         return array
+    
+    def terminate_from_stockfish(self) -> int:
+        payload = {
+            'fen': self.board.fen(),  # This is the starting position in FEN format
+            'depth': '10',  # This is the example move, you can chain moves like 'e2e4 e7e5'
+        }
+        response = requests.get(url="https://stockfish.online/api/s/v2.php", params=payload)
+        data = response.json()
+        eval = data['evaluation']
+        if eval is None:
+            return 0
+
+        if eval < -1:
+            return -1
+        if eval > 1:
+            return 1
+        return 0
 
     def terminal_eval(self) -> int:
         """
@@ -281,6 +304,9 @@ class BoardPypiChess(BlankBoard):
         1 : player one (white) wins
         2 : unterminated
         """
+        if self.board.fullmove_number > 10:
+            return self.terminate_from_stockfish()
+
         if self.board.is_game_over():
             outcome = self.board.outcome()
             winner = outcome.winner # bool, True = white won, False = black won, None = draw
@@ -297,10 +323,13 @@ class BoardPypiChess(BlankBoard):
         Returns a board instance based on the integer position
         of the move in the p-vector
         """
-        # print(self.all_legal_moves)
+
         move_uci = UCI_ARRAY[num]
-        # print(move_uci)
-        move = chess.Move.from_uci(move_uci)
+
+        if self.white_move:
+            move = chess.Move.from_uci(move_uci)
+        else:
+            move = chess.Move.from_uci(self.flip_uci(move_uci))
 
         self.board.push(move)
         new_board_fen = self.board.fen()
@@ -408,3 +437,24 @@ class BoardPypiChess(BlankBoard):
             board_array[row, col] = value
 
         return board_array
+
+# board = BoardPypiChess.from_start()
+
+# print(board.board_to_numpy(board.board))
+# print(board.to_tensor())
+# print(board.white_move)
+# print(board.board.fen())
+
+# indices = [i for i, element in enumerate(board.legal_moves()) if element != 0]
+# print(indices)
+
+# board = board.move_from_int(34)
+
+# print(board.board_to_numpy(board.board))
+# print(board.to_tensor())
+# print(board.white_move)
+# print(board.board.fen())
+
+# print(board.terminal_eval())
+
+
