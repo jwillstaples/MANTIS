@@ -36,10 +36,10 @@ if __name__ == "__main__":
     SAVE_DIR = "chessdata1"
     TEMP_NAME = "old.pt"
     multicore = 2
-    # Net = ChessNet
-    # Board = BoardPypiChess
-    Net = C4Net
-    Board = BoardC4
+    Net = ChessNet
+    Board = BoardPypiChess
+    #Net = C4Net
+    #Board = BoardC4
 
     # player = SerialPlayer(MCTS_ITER, old_exists, SAVE_DIR, TEMP_NAME, multicore, Net, Board)
     player = ParallelPlayer(
