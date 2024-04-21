@@ -49,6 +49,9 @@ class BoardC4(BlankBoard):
                 return i
 
         return 7
+    
+    def terminal_slow(self) -> bool:
+        return False
 
     def terminal_eval(self) -> int:
         horizontal_kernel = np.array([[1, 1, 1, 1]])
