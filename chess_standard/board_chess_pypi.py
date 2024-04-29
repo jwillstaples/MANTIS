@@ -286,17 +286,22 @@ class BoardPypiChess(BlankBoard):
             'fen': self.board.fen(),  # This is the starting position in FEN format
             'depth': '10',  # This is the example move, you can chain moves like 'e2e4 e7e5'
         }
+        
         response = requests.get(url="https://stockfish.online/api/s/v2.php", params=payload)
-        data = response.json()
-        eval = data['evaluation']
-        if eval is None:
+        if response.status_code == 200:
+            data = response.json()
+            eval = data['evaluation']
+            if eval is None:
+                return 0
+            if eval < -1:
+                return -1
+            if eval > 1:
+                return 1
             return 0
-
-        if eval < -1:
-            return -1
-        if eval > 1:
-            return 1
-        return 0
+        else:
+            print(response)
+            print(response.status_code)
+            return 
     
     def terminal_slow(self) -> bool:
         return self.board.fullmove_number >= STOP_AT

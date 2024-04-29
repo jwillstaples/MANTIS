@@ -92,6 +92,7 @@ class Parallel_MCTS:
             try:
                 results[index] = board.player_perspective_eval()
             except Exception as e:
+                results[index] = 2
                 print("Error from the following board")
                 print(e)
                 print(board.board)
