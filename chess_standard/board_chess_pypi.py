@@ -4,6 +4,7 @@ import chess
 import torch
 import requests
 from common.board import BlankBoard
+from stockfish import Stockfish
 
 UCI_ARRAY = ["a1b1",  "a1c1",  "a1d1",  "a1e1",  "a1f1",  "a1g1",  "a1h1",  "a1a2",
     "a1b2",  "a1c2",  "a1a3",  "a1b3",  "a1c3",  "a1a4",  "a1d4",  "a1a5",
@@ -302,9 +303,25 @@ class BoardPypiChess(BlankBoard):
             print(response)
             print(response.status_code)
             return 
+        
+    def terminate_from_local_stockfish(self) -> int:
+        stockfish = Stockfish("stockfish")
+        stockfish.set_fen_position(self.board.fen())
+        eval = stockfish.get_evaluation()
+        if eval['type'] == 'mate':
+            val = eval['value']
+        if eval['type'] == 'cp':
+            val = eval['value'] / 100
+
+        if val <= -1:
+            return -1
+        if val >= 1:
+            return 1
+        return 0
     
     def terminal_slow(self) -> bool:
         return self.board.fullmove_number >= STOP_AT
+        # return False
 
     def terminal_eval(self) -> int:
         """
@@ -315,7 +332,7 @@ class BoardPypiChess(BlankBoard):
         2 : unterminated
         """
         if self.board.fullmove_number >= STOP_AT:
-            return self.terminate_from_stockfish()
+            return self.terminate_from_local_stockfish()
 
         if self.board.is_game_over():
             outcome = self.board.outcome()
@@ -466,5 +483,6 @@ class BoardPypiChess(BlankBoard):
 # print(board.board.fen())
 
 # print(board.terminal_eval())
+# print(board.terminate_from_local_stockfish())
 
 

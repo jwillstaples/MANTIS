@@ -20,7 +20,7 @@ if __name__ == "__main__":
     NUM_GENERATED = 100
     BATCH_SIZE = 15
     GAMES_TO_EVAL = 30
-    MCTS_ITER = 100
+    MCTS_ITER = 10
     START_ITERATION = 0
     old_exists = False
 

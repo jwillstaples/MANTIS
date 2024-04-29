@@ -7,3 +7,5 @@ tqdm
 bitarray
 PrettyTable
 chess
+requests
+stockfish
