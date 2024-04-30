@@ -251,7 +251,7 @@ STOP_AT = 10
 
 STOCKFISH_PATH = "stockfish" # MAC M2
 STOCKFISH_PATH = "/home/jovyan/work/MANTIS/stockfish-ubuntu16" #Jupyter Lab Container
-
+STOCKFISH_PATH = "/hpc/home/ash98/MANTIS/stockfish-ubuntu16"
 
 class BoardPypiChess(BlankBoard):
     def __init__(self, fen=""):
