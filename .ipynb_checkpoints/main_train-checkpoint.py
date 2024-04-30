@@ -16,11 +16,11 @@ if __name__ == "__main__":
     mp.set_start_method("spawn")
 
     MAX_ITERATIONS = 1000
-    EPOCHS_PER_ITERATION = 50
-    NUM_GENERATED = 100
+    EPOCHS_PER_ITERATION = 10
+    NUM_GENERATED = 10
     BATCH_SIZE = 15
-    GAMES_TO_EVAL = 30
-    MCTS_ITER = 100
+    GAMES_TO_EVAL = 3
+    MCTS_ITER = 5
     START_ITERATION = 0
     old_exists = False
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     SAVE_DIR = "chessdata1"
     TEMP_NAME = "old.pt"
-    multicore = 2
+    multicore = 1
     Net = ChessNet
     Board = BoardPypiChess
     # Net = C4Net

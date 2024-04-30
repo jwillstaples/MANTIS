@@ -45,7 +45,7 @@ class Parallel_MCTS:
                 node.child_index = None
                 node.p = None
 
-                self.runs[i] = self.runs[i] - node.n
+                self.runs[i] = max(self.runs[i] - node.n, 3)
                 self.trees[i] = node
         for i, fin in enumerate(finished_games):
             if fin:
@@ -152,6 +152,7 @@ class Parallel_MCTS:
             self.runs -= 1
 
             for i, runs_left in enumerate(self.runs):
+                
                 if runs_left == 0:
                     values = np.array(
                         [
@@ -173,4 +174,5 @@ class Parallel_MCTS:
                     f"Total Time: {round(et, 3)}, Forward Time: {round(ppt, 3)}, F/T = {round(ppt/et*100, 2)}%\n"
                 )
                 append_to_recent_key("percent_forward", ppt / et * 100)
+        
         return self.first_boards, boards, vals, indices, next_trees

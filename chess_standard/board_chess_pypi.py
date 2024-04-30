@@ -249,6 +249,9 @@ UCI_MAP = {s: i for i, s in enumerate(UCI_ARRAY)}
 
 STOP_AT = 10
 
+STOCKFISH_PATH = "stockfish" # MAC M2
+STOCKFISH_PATH = "/home/jovyan/work/MANTIS/stockfish-ubuntu16" #Jupyter Lab Container
+
 
 class BoardPypiChess(BlankBoard):
     def __init__(self, fen=""):
@@ -305,7 +308,7 @@ class BoardPypiChess(BlankBoard):
             return 
         
     def terminate_from_local_stockfish(self) -> int:
-        stockfish = Stockfish("stockfish")
+        stockfish = Stockfish(STOCKFISH_PATH)
         stockfish.set_fen_position(self.board.fen())
         eval = stockfish.get_evaluation()
         if eval['type'] == 'mate':
@@ -464,25 +467,3 @@ class BoardPypiChess(BlankBoard):
             board_array[row, col] = value
 
         return board_array
-
-# board = BoardPypiChess.from_start()
-
-# print(board.board_to_numpy(board.board))
-# print(board.to_tensor())
-# print(board.white_move)
-# print(board.board.fen())
-
-# indices = [i for i, element in enumerate(board.legal_moves()) if element != 0]
-# print(indices)
-
-# board = board.move_from_int(34)
-
-# print(board.board_to_numpy(board.board))
-# print(board.to_tensor())
-# print(board.white_move)
-# print(board.board.fen())
-
-# print(board.terminal_eval())
-# print(board.terminate_from_local_stockfish())
-
-
