@@ -1,4 +1,6 @@
 import numpy as np
+from chess_standard.board_chess_pypi import BoardPypiChess
+from chess_standard.mantis_chess import MantisChess
 from connect4.board_c4 import BoardC4
 import random
 from connect4.mantis_c4 import MantisC4
@@ -49,7 +51,17 @@ def bot_v_human_C4():
     game.setup()
     arcade.run()
 
+def bot_v_human_Chess():
+    # IMPLEMENT
+    print("Begun")
+    bot = MantisChess("chessbot.pt", runs=10)
+
+    starting_board = BoardPypiChess()
+    move1 = bot.move(starting_board)
+    print(move1.board)
+
 
 if __name__ == "__main__":
-    bot_v_human_C4()
+    # bot_v_human_C4()
     # bot_v_bot()
+    bot_v_human_Chess()

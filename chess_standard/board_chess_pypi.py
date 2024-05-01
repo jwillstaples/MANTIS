@@ -247,7 +247,7 @@ OUTPUT_LENGTH = len(UCI_ARRAY)
 
 UCI_MAP = {s: i for i, s in enumerate(UCI_ARRAY)}
 
-STOP_AT = 10
+STOP_AT = 999
 
 STOCKFISH_PATH = "stockfish" # MAC M2
 STOCKFISH_PATH = "/home/jovyan/work/MANTIS/stockfish-ubuntu16" #Jupyter Lab Container
