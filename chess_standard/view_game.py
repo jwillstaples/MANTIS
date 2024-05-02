@@ -9,7 +9,7 @@ from chess_standard.mantis_chess import MantisChess
 
 # ---- PARAMS ---------------------------------------------------------------------------
 SCREEN_TITLE = "MANTIS CHESS"
-SCREEN_WIDTH = 1100
+SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
 BOARD_ROWS = 8
 BOARD_COLS = 8
@@ -19,24 +19,27 @@ DARK_COLOR = arcade.color.BURLYWOOD
 FONT_SIZE = 12
 STATUS_FONT_SIZE = 36
 
-MOVE_HISTORY_WIDTH = 260
-MOVE_HISTORY_MAX_ROWS = 25
-MOVE_HISTORY_ROW_HEIGHT = 20
-MOVE_HISTORY_MOVE_WIDTH = 60
-MOVE_HISTORY_FONT_SIZE = 14
-MOVE_HISTORY_TEXT_COLOR = (167, 167, 167)
-
-DELAY_TIME = 0.0
+DELAY_TIME = 1.0
 
 # ---- CHESS FRONTEND -------------------------------------------------------------------
 class ChessGame(arcade.Window):
     # ---- MAIN FUNCTIONS ---------------------------------------------------------------
     def __init__(
             self,
-            chess_bot_fp="",
-            chess_bot_runs=10,
-            board_init_fen="",
-            player_color=True
+            # mode select: 0 = human v human, 1 = human v bot, 2 = bot v bot
+            mode=0,
+
+            # human v bot params
+            player_clr=True,
+
+            # bot1 params
+            white_bot=None,
+
+            # bot2 params
+            black_bot=None,
+
+            # game state signals
+            board_init_fen=""
         ):
         '''
         initializes the **arcade** window w/ all the PARAMS
@@ -44,22 +47,22 @@ class ChessGame(arcade.Window):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
         arcade.set_background_color((24, 24, 24))
 
-        self.chess_setup(chess_bot_fp, chess_bot_runs, board_init_fen, player_color)
+        self.mode = mode
+        self.player_clr = player_clr
+        self.board_init_fen = board_init_fen
+
+        # bot init
+        self.white_bot = white_bot
+        self.black_bot = black_bot
+
+        self.chess_setup()
     
-    def chess_setup(self, chess_bot_fp, chess_bot_runs, board_init_fen, player_color):
+    def chess_setup(self):
         '''
         initializes the actual chess game setup
         '''
-        # init bot
-        self.player_color = player_color
-        self.MANTIS = MantisChess(fp=chess_bot_fp, runs=chess_bot_runs)
-        self.bot_move = False
-
         # board vars
-        self.chess_board = BoardPypiChess(fen=board_init_fen)
-        if (player_color == False):
-            self.make_MANTIS_move_to_board()
-        self.chess_board_array = self.chess_board.board_to_perspective(self.chess_board.board)
+        self.chess_board = BoardPypiChess(fen=self.board_init_fen)
 
         # sprites vars
         self.textures = {
@@ -78,8 +81,7 @@ class ChessGame(arcade.Window):
             0: None,
         }
         self.chess_piece_sprites = arcade.SpriteList()
-        self.promotion_piece_sprites = arcade.SpriteList()
-        self.load_piece_sprites()
+        self.update_board()
 
         # game state/selection ctrl vars
         self.origin_square = None # type = chess.Square
@@ -100,9 +102,6 @@ class ChessGame(arcade.Window):
         clears, redraws all game objects, and updates display w/ new frame
         '''
         arcade.start_render()
-
-        # self.draw_color_select_screen()
-
         self.draw_board()
 
         if (self.origin_square):
@@ -111,7 +110,6 @@ class ChessGame(arcade.Window):
             self.draw_valid_moves_highlights()
 
         self.chess_piece_sprites.draw()
-        self.draw_move_history()
 
         if (self.is_promotion_event):
             self.draw_promotion_screen()
@@ -129,7 +127,10 @@ class ChessGame(arcade.Window):
         '''
         if (
             (button == arcade.MOUSE_BUTTON_LEFT) and
-            (self.chess_board.board.turn == self.player_color) and 
+            (
+                (self.mode == 0) or
+                (self.mode == 1 and self.chess_board.board.turn == self.player_clr)
+            ) and 
             (bool(self.chess_board.board.legal_moves))
         ):
             
@@ -159,7 +160,7 @@ class ChessGame(arcade.Window):
 
                 if promo != None:
                     move = self.chess_board.board.find_move(self.origin_square, self.target_square, promo)
-                    self.make_move_to_board(move=move)
+                    self.make_human_move_to_board(move=move)
 
             else:
                 row, col = (SCREEN_HEIGHT - y) // SQUARE_SIZE, x // SQUARE_SIZE
@@ -171,7 +172,10 @@ class ChessGame(arcade.Window):
                 # on mouse click, first check if clicked square is a selectable piece
                 if (
                     (self.chess_board.board.color_at(clicked_sq_num) != None) and 
-                    (self.chess_board.board.color_at(clicked_sq_num) == self.player_color)
+                    (   
+                        (self.mode == 0 and self.chess_board.board.color_at(clicked_sq_num) == self.chess_board.board.turn) or
+                        (self.mode == 1 and self.chess_board.board.color_at(clicked_sq_num) == self.player_clr)
+                    )
                 ):  
                     # if clicked squared is a selectable piece that we've already selected, reset highlight
                     if self.origin_square == clicked_sq_num:
@@ -187,7 +191,11 @@ class ChessGame(arcade.Window):
                     # the clicked square (target square) is in the valid moves list for that piece
                     if (
                         (self.origin_square != None) and
-                        (clicked_sq_num in self.valid_moves.keys())
+                        (clicked_sq_num in self.valid_moves.keys()) and 
+                        (   
+                            (self.mode == 0) or
+                            (self.mode == 1 and self.chess_board.board.turn == self.player_clr)
+                        )
                     ):
                         self.target_square = clicked_sq_num
 
@@ -203,7 +211,7 @@ class ChessGame(arcade.Window):
                                 promotion=promotion_type
                             )
 
-                            self.make_move_to_board(move=move)
+                            self.make_human_move_to_board(move=move)
                     
                     if (self.is_promotion_event == False):
                         self.reset_selection()
@@ -289,60 +297,6 @@ class ChessGame(arcade.Window):
                         color=arcade.color.GREEN
                     )
 
-    def draw_move_history(self):
-        counter = 1
-        arcade.draw_rectangle_filled(
-            center_x=8 * SQUARE_SIZE + 150,
-            center_y=(SCREEN_HEIGHT - 20) - (MOVE_HISTORY_MAX_ROWS / 2 * MOVE_HISTORY_ROW_HEIGHT),
-            width=MOVE_HISTORY_WIDTH,
-            height=MOVE_HISTORY_MAX_ROWS * MOVE_HISTORY_ROW_HEIGHT,
-            color=(40, 40, 40)
-        )
-        move_x = 8 * SQUARE_SIZE + 20
-        for i in range(0, len(self.chess_board.board.move_stack[-MOVE_HISTORY_MAX_ROWS * 2 :]), 2):
-            move_y = SCREEN_HEIGHT - 20 - (i // 2 * MOVE_HISTORY_ROW_HEIGHT)
-            arcade.draw_text(
-                text=f"{counter}. ",
-                start_x=move_x,
-                start_y=move_y,
-                color=MOVE_HISTORY_TEXT_COLOR,
-                font_size=MOVE_HISTORY_FONT_SIZE,
-                anchor_x="left",
-                anchor_y="top",
-                bold=True,
-            )
-            arcade.draw_text(
-                text=self.chess_board.board.move_stack[i],
-                start_x=move_x + MOVE_HISTORY_MOVE_WIDTH,
-                start_y=move_y,
-                color=MOVE_HISTORY_TEXT_COLOR,
-                font_size=MOVE_HISTORY_FONT_SIZE,
-                anchor_x="left",
-                anchor_y="top",
-                bold=True,
-            )
-            if i + 1 < len(self.chess_board.board.move_stack):
-                arcade.draw_text(
-                    text=self.chess_board.board.move_stack[i + 1],
-                    start_x=move_x + 2 * MOVE_HISTORY_MOVE_WIDTH + 30,
-                    start_y=move_y,
-                    color=MOVE_HISTORY_TEXT_COLOR,
-                    font_size=MOVE_HISTORY_FONT_SIZE,
-                    anchor_x="left",
-                    anchor_y="top",
-                    bold=True,
-                )
-            counter += 1
-
-    def draw_color_select_screen(self):
-        arcade.draw_lrtb_rectangle_filled(
-            left=0, 
-            right=SCREEN_WIDTH, 
-            top=SCREEN_HEIGHT, 
-            bottom=0, 
-            color=(0, 0, 0, 127)
-        )
-
     def is_mouse_hovering_promotion_sprite(self, sprite, x, y):
         left = sprite.center_x - sprite.width / 2
         right = sprite.center_x + sprite.width / 2
@@ -366,19 +320,27 @@ class ChessGame(arcade.Window):
             bold=True,
         )
 
-        if self.player_color:
+        promotion_options = None
+        if (
+            (self.mode == 0 and self.chess_board.board.turn == True) or 
+            (self.mode == 1 and self.chess_board.board.turn == self.player_clr and self.player_clr == True)
+        ):
             promotion_options = [4, 2, 3, 5]
-        else:
+        elif (
+            (self.mode == 0 and self.chess_board.board.turn == False) or
+            (self.mode == 1 and self.chess_board.board.turn == self.player_clr and self.player_clr == False)
+        ):
             promotion_options = [-4, -2, -3, -5]
 
-        for i, option_name in enumerate(promotion_options):
-            texture = self.textures[option_name]
-            sprite = arcade.Sprite()
-            sprite.texture = texture
-            sprite.scale = 0.03
-            sprite.center_x = (x_pos - (112)) + (62 * (i - 1))
-            sprite.center_y = y_pos - 50
-            self.promotion_piece_sprites.append(sprite)
+        if (promotion_options):
+            for i, option_name in enumerate(promotion_options):
+                texture = self.textures[option_name]
+                sprite = arcade.Sprite()
+                sprite.texture = texture
+                sprite.scale = 0.03
+                sprite.center_x = (x_pos - (112)) + (62 * (i - 1))
+                sprite.center_y = y_pos - 50
+                self.promotion_piece_sprites.append(sprite)
 
     def draw_promotion_boxes(self):
         fill_hover = (40, 40, 40)
@@ -479,7 +441,7 @@ class ChessGame(arcade.Window):
 
         return all_valid_moves
     
-    def update_board(self, delta_time=0):
+    def update_board(self):
         self.chess_board_array = self.chess_board.board_to_perspective(self.chess_board.board)
 
         self.chess_piece_sprites.clear()
@@ -487,17 +449,24 @@ class ChessGame(arcade.Window):
 
         if (self.chess_board.board.is_game_over()):
             self.is_gameover_event = True
+            print(self.chess_board.terminal_eval())
+        else:
+            if (self.mode == 2):
+                arcade.schedule(self.make_bot_move_to_board, DELAY_TIME)
     
-    def make_move_to_board(self, move: chess.Move):
+    def make_human_move_to_board(self, move: chess.Move):
         self.chess_board.board.push(move)
         self.update_board()
-        self.make_MANTIS_move_to_board()
+
+        if (self.mode == 1):
+            self.make_bot_move_to_board()
     
-    def make_MANTIS_move_to_board(self):
-        self.bot_move = True
-        self.chess_board = self.MANTIS.move(self.chess_board)
-        arcade.schedule(self.update_board, DELAY_TIME)
-        self.bot_move = False
+    def make_bot_move_to_board(self, delta_time=0):
+        if (self.chess_board.board.turn):
+            self.chess_board = self.white_bot.move(self.chess_board)
+        else:
+            self.chess_board = self.black_bot.move(self.chess_board)
+        self.update_board()
         
     def reset_selection(self):
         self.origin_square = None

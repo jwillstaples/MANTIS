@@ -68,4 +68,18 @@ def bot_v_human_Chess():
 if __name__ == "__main__":
     # bot_v_human_C4()
     # bot_v_bot()
-    bot_v_human_Chess()
+    # bot_v_human_Chess()
+    HUMAN_V_HUMAN = 0
+    HUMAN_V_BOT = 1
+    BOT_V_BOT = 2
+
+    white_bot = MantisChess(fp="chessbot.pt", random=False, runs=10)
+    black_bot = MantisChess(fp="chessbot.pt", random=True, runs=10)
+    game = ChessGame(
+        mode=BOT_V_BOT,
+        player_clr=True,
+        white_bot=white_bot,
+        black_bot=black_bot,
+        board_init_fen=""
+    )
+    arcade.run()
