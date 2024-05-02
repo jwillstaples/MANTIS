@@ -124,8 +124,8 @@ if __name__ == "__main__":
     HUMAN_V_BOT = 1
     BOT_V_BOT = 2
 
-    white_bot = MantisChess(fp="chessbot.pt", random=False, runs=10)
-    black_bot = MantisChess(fp="chessbot.pt", random=True, runs=10)
+    white_bot = MantisChess(fp="chessbot.pt", random=False, runs=400)
+    black_bot = MantisChess(fp="chessbot.pt", random=True, runs=1)
 
     # colors: White = True, Black = False
     """
