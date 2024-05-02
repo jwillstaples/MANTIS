@@ -11,6 +11,8 @@ import time
 import arcade
 
 from connect4.view import C4Game
+# from chess_standard.view import ChessGame
+from chess_standard.view_game import ChessGame
 
 
 def bot_v_bot():
@@ -54,12 +56,14 @@ def bot_v_human_C4():
 def bot_v_human_Chess():
     # IMPLEMENT
     print("Begun")
-    bot = MantisChess("chessbot.pt", runs=10)
-
-    starting_board = BoardPypiChess()
-    move1 = bot.move(starting_board)
-    print(move1.board)
-
+    game = ChessGame(
+        chess_bot_fp="chessbot.pt",
+        chess_bot_runs=10,
+        board_init_fen="",
+        player_color=True
+    )
+    arcade.run()
+ 
 
 if __name__ == "__main__":
     # bot_v_human_C4()

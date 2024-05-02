@@ -2,7 +2,7 @@ import torch
 from chess_standard.board_chess_pypi import BoardPypiChess
 from chess_standard.chessnet import ChessNet
 from common.mcts import mcts
-from common.player import BlankPlayer
+from common.player import BlankPlayer 
 
 
 class MantisChess(BlankPlayer):

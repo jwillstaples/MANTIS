@@ -22,7 +22,6 @@ DARK_COLOR = arcade.color.BURLYWOOD
 
 fen = ""
 
-
 class ChessGame(arcade.Window):
     def __init__(self):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
@@ -390,11 +389,11 @@ class ChessGame(arcade.Window):
     def on_mouse_press(self, x, y, button, modifiers):
         # print(self.pypi_board.board_to_perspective(self.pypi_board.board))
         # print(self.game_state_array)
-        print()
+        # print()
         if button == arcade.MOUSE_BUTTON_LEFT and bool(self.pypi_board.board.legal_moves):
 
             if self.awaiting_promotion_selection:
-                print('xd1')
+                # print('xd1')
                 rook_sprite = self.promotion_sprites[0]
                 knight_sprite = self.promotion_sprites[1]
                 bishop_sprite = self.promotion_sprites[2]
@@ -434,7 +433,7 @@ class ChessGame(arcade.Window):
 
                 self.reset_highlight()
             else:
-                print('xd2')
+                # print('xd2')
                 col = x // SQUARE_SIZE
                 row = (SCREEN_HEIGHT - y) // SQUARE_SIZE
 
@@ -444,12 +443,12 @@ class ChessGame(arcade.Window):
 
                 filerank = file + str(rank)
                 to_sq = chess.parse_square(filerank)
-                print(file, rank, filerank, to_sq, chess.square_name(chess.parse_square(filerank)))
+                # print(file, rank, filerank, to_sq, chess.square_name(chess.parse_square(filerank)))
                 # on mouse click, first check if the clicked square is a selectable piece
                 if ((self.pypi_board.board.color_at(to_sq) != None) and (self.pypi_board.board.color_at(to_sq) == self.pypi_board.board.turn)):
-                    print('xd3')
-                    print(self.pypi_board.board.color_at(to_sq))
-                    print(self.pypi_board.board.turn)
+                    # print('xd3')
+                    # print(self.pypi_board.board.color_at(to_sq))
+                    # print(self.pypi_board.board.turn)
                     # if the clicked selectable piece is the one we already have selected, reset highlight
                     if self.origin_square == filerank:
                         self.reset_highlight()
@@ -462,15 +461,15 @@ class ChessGame(arcade.Window):
                             for from_sq, promo in mapping_dict.items():
                                 temp.append((chess.square_name(from_sq), chess.square_name(to_sq), promo))
                         temp2 = [x for x in temp if x[0] == self.origin_square]
-                        print(self.pypi_board.board.legal_moves)
-                        print(temp)
-                        print(temp2)
+                        # print(self.pypi_board.board.legal_moves)
+                        # print(temp)
+                        # print(temp2)
 
                 # if the clicked square is NOT a selectable piece
                 else:
-                    print('xd4')
-                    print(self.pypi_board.board.color_at(to_sq))
-                    print(self.pypi_board.board.turn)
+                    # print('xd4')
+                    # print(self.pypi_board.board.color_at(to_sq))
+                    # print(self.pypi_board.board.turn)
                     # then, first check if we already have a selected piece and
                     # if the clicked square is in the valid moves for that piece
                     if self.origin_square != None and to_sq in self.valid_moves.keys():
