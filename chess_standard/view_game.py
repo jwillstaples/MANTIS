@@ -1,5 +1,6 @@
 import chess
 import arcade
+import time
 
 from collections import defaultdict
 from chess_standard.board_chess_pypi import BoardPypiChess
@@ -39,32 +40,17 @@ class ChessGame(arcade.Window):
             black_bot=None,
 
             # game state signals
-            board_init_fen=""
+            board_init_fen="",
+
+            # only for bot v bot win percentage
+            random_eval_iters=100,
+            bot_clr=True
         ):
         '''
         initializes the **arcade** window w/ all the PARAMS
         '''
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
         arcade.set_background_color((24, 24, 24))
-
-        self.mode = mode
-        self.player_clr = player_clr
-        self.board_init_fen = board_init_fen
-
-        # bot init
-        self.white_bot = white_bot
-        self.black_bot = black_bot
-
-        self.chess_setup()
-    
-    def chess_setup(self):
-        '''
-        initializes the actual chess game setup
-        '''
-        # board vars
-        self.chess_board = BoardPypiChess(fen=self.board_init_fen)
-
-        # sprites vars
         self.textures = {
             1: arcade.load_texture("chess_standard/static/wP.png"),
             2: arcade.load_texture("chess_standard/static/wN.png"),
@@ -80,6 +66,32 @@ class ChessGame(arcade.Window):
             -6: arcade.load_texture("chess_standard/static/bK.png"),
             0: None,
         }
+
+        self.mode = mode
+        self.player_clr = player_clr
+        self.board_init_fen = board_init_fen
+        self.random_eval_iters = random_eval_iters
+
+        # bot init
+        self.bot_clr = bot_clr
+        self.white_bot = white_bot
+        self.black_bot = black_bot
+
+        self.match_iter = 1
+        self.white_wins = 0
+        self.black_wins = 0
+        self.draws = 0
+
+        self.chess_setup()
+    
+    def chess_setup(self):
+        '''
+        initializes the actual chess game setup
+        '''
+        # board vars
+        self.chess_board = BoardPypiChess(fen=self.board_init_fen)
+
+        # sprites vars
         self.chess_piece_sprites = arcade.SpriteList()
         self.update_board()
 
@@ -418,8 +430,26 @@ class ChessGame(arcade.Window):
         gameover_text = ""
         if (self.chess_board.terminal_eval() == 1):
             gameover_text = "WHITE WINS!"
+            self.white_wins += 1
         elif (self.chess_board.terminal_eval() == -1):
             gameover_text = "BLACK WINS!"
+            self.black_wins += 1
+        elif (self.chess_board.terminal_eval() == 0):
+            gameover_text = "DRAW."
+            self.draws += 1
+        print(f'Results of Match #{self.match_iter}: {gameover_text} | Score = (W: {self.white_wins}, B: {self.black_wins}, D: {self.draws})')
+        
+        white_win_percentage = self.white_wins / self.match_iter
+        black_win_percentage = self.black_wins / self.match_iter
+        draw_percentage = self.draws / self.match_iter
+
+        if (self.bot_clr):
+            print(f"Our bot\'s win percentage = {self.white_wins}/{self.match_iter} = {white_win_percentage:.2f}")
+        else:
+            print(f"Our bot\'s win percentage = {self.black_wins}/{self.match_iter} = {black_win_percentage:.2f}")
+
+        self.match_iter += 1
+
         arcade.draw_text(
             text=gameover_text,
             start_x=400,
@@ -430,6 +460,11 @@ class ChessGame(arcade.Window):
             anchor_y="center",
             bold=True
         )
+
+        if (self.match_iter < self.random_eval_iters + 1):
+            self.reset_game()
+        else:
+            arcade.exit()
 
 
     # ---- EVENT HANDLING LOGIC ---------------------------------------------------------
@@ -449,7 +484,7 @@ class ChessGame(arcade.Window):
 
         if (self.chess_board.board.is_game_over()):
             self.is_gameover_event = True
-            print(self.chess_board.terminal_eval())
+            arcade.unschedule(self.make_bot_move_to_board)
         else:
             if (self.mode == 2):
                 arcade.schedule(self.make_bot_move_to_board, DELAY_TIME)
@@ -473,3 +508,9 @@ class ChessGame(arcade.Window):
         self.target_square = None
         self.valid_moves = None
         self.is_promotion_event = False
+    
+    def reset_game(self):
+        self.chess_setup()
+
+        
+

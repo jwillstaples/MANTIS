@@ -75,11 +75,21 @@ if __name__ == "__main__":
 
     white_bot = MantisChess(fp="chessbot.pt", random=False, runs=10)
     black_bot = MantisChess(fp="chessbot.pt", random=True, runs=10)
+
+    # colors: White = True, Black = False
     game = ChessGame(
         mode=BOT_V_BOT,
-        player_clr=True,
+        board_init_fen="",
+        
+        # load bots, not necessarily used unless mode specifies
         white_bot=white_bot,
         black_bot=black_bot,
-        board_init_fen=""
+
+        # only for human v bot mode
+        player_clr=True,
+
+        # only for bot v bot mode
+        bot_clr=True, # sets OUR bot's color
+        random_eval_iters=10 # sets # of iters to play bot v bot
     )
     arcade.run()
