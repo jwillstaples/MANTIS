@@ -9,7 +9,7 @@ class MantisChess(BlankPlayer):
     def __init__(self, fp, random=False, runs=500):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.runs = runs
-        self.net = ChessNet()
+        self.net = ChessNet().to(device)
         if not random:
             self.net.load_state_dict(torch.load(fp, map_location=device))
 
