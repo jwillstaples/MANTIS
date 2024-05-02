@@ -45,6 +45,57 @@ def bot_v_bot():
     else:
         print("draw")
 
+def bot_v_bot_Chess(
+    white_bot,
+    black_bot,
+    bot_clr=True,
+    num_iters=1000
+):
+    
+    match_iter = 0
+
+    white_wins = 0
+    black_wins = 0
+    draws = 0
+    
+    for match_iter in range(num_iters):
+        print(f'Match Iter: {match_iter + 1} / {num_iters}')
+        game_board = BoardPypiChess()
+        res = 2
+
+        while res == 2:
+            if game_board.board.turn:
+                game_board = white_bot.move(game_board)
+            else:
+                game_board = black_bot.move(game_board)
+            res = game_board.terminal_eval()
+
+            gameover_text = ""
+            if res == 1:
+                gameover_text = "WHITE WINS."
+                white_wins += 1
+            elif res == -1:
+                gameover_text = "BLACK WINS."
+                black_wins += 1
+            elif res == 0:
+                gameover_text = "DRAW."
+                draws += 1
+                
+        print(f'Results of Match #{match_iter + 1}: {gameover_text} | Score = (W: {white_wins}, B: {black_wins}, D: {draws})')
+
+        white_win_percentage = white_wins / (match_iter + 1)
+        black_win_percentage = black_wins / (match_iter + 1)
+        # draw_percentage = draws / (match_iter + 1)
+
+        if (bot_clr):
+            print(f"Our bot\'s win percentage = {white_wins}/{match_iter+1} = {white_win_percentage:.2f}")
+        else:
+            print(f"Our bot\'s win percentage = {black_wins}/{match_iter+1} = {black_win_percentage:.2f}")
+        
+        print()
+
+
+    print()
 
 def bot_v_human_C4():
     SCREEN_WIDTH = 900
@@ -77,6 +128,7 @@ if __name__ == "__main__":
     black_bot = MantisChess(fp="chessbot.pt", random=True, runs=10)
 
     # colors: White = True, Black = False
+    """
     game = ChessGame(
         mode=BOT_V_BOT,
         board_init_fen="",
@@ -93,3 +145,11 @@ if __name__ == "__main__":
         random_eval_iters=10 # sets # of iters to play bot v bot
     )
     arcade.run()
+    """
+
+    bot_v_bot_Chess(
+        white_bot=white_bot,
+        black_bot=black_bot,
+        bot_clr=True,
+        num_iters=10
+    )

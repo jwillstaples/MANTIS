@@ -20,8 +20,6 @@ DARK_COLOR = arcade.color.BURLYWOOD
 FONT_SIZE = 12
 STATUS_FONT_SIZE = 36
 
-DELAY_TIME = 1.0
-
 # ---- CHESS FRONTEND -------------------------------------------------------------------
 class ChessGame(arcade.Window):
     # ---- MAIN FUNCTIONS ---------------------------------------------------------------
@@ -44,7 +42,9 @@ class ChessGame(arcade.Window):
 
             # only for bot v bot win percentage
             random_eval_iters=100,
-            bot_clr=True
+            bot_clr=True,
+            view_games=False,
+            delay_time=0.0
         ):
         '''
         initializes the **arcade** window w/ all the PARAMS
@@ -81,6 +81,8 @@ class ChessGame(arcade.Window):
         self.white_wins = 0
         self.black_wins = 0
         self.draws = 0
+        self.view_games = view_games
+        self.delay_time = delay_time
 
         self.chess_setup()
     
@@ -487,7 +489,7 @@ class ChessGame(arcade.Window):
             arcade.unschedule(self.make_bot_move_to_board)
         else:
             if (self.mode == 2):
-                arcade.schedule(self.make_bot_move_to_board, DELAY_TIME)
+                arcade.schedule(self.make_bot_move_to_board, self.delay_time)
     
     def make_human_move_to_board(self, move: chess.Move):
         self.chess_board.board.push(move)
