@@ -247,11 +247,11 @@ OUTPUT_LENGTH = len(UCI_ARRAY)
 
 UCI_MAP = {s: i for i, s in enumerate(UCI_ARRAY)}
 
-STOP_AT = 999
+STOP_AT = 100
 
 STOCKFISH_PATH = "stockfish" # MAC M2
-STOCKFISH_PATH = "/home/jovyan/work/MANTIS/stockfish-ubuntu16" #Jupyter Lab Container
-STOCKFISH_PATH = "/hpc/home/ash98/MANTIS/stockfish-ubuntu16"
+# STOCKFISH_PATH = "/home/jovyan/work/MANTIS/stockfish-ubuntu16" #Jupyter Lab Container
+# STOCKFISH_PATH = "/hpc/home/ash98/MANTIS/stockfish-ubuntu16"
 
 class BoardPypiChess(BlankBoard):
     def __init__(self, fen=""):

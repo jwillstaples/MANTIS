@@ -1,6 +1,7 @@
 import numpy as np
 from chess_standard.board_chess_pypi import BoardPypiChess
 from chess_standard.mantis_chess import MantisChess
+from chess_standard.random_chess import RandomChess
 from connect4.board_c4 import BoardC4
 import random
 from connect4.mantis_c4 import MantisC4
@@ -34,19 +35,19 @@ def bot_v_bot():
 
     bot = MantisC4("c4_58iter_1000mcts.pt", runs=1500)
     # bot2 = MantisC4("data6/net4.pt", True)
-    # bot2 = RandomC4()
+    bot2 = RandomC4()
 
     print(game_board)
     indices = []
     while result == 2:
         if game_board.red_move:
-            game_board = bot.move(game_board)
-            # index = bot.move_and_get_index(game_board)
+            # game_board = bot.move(game_board)
+            index = bot.move_and_get_index(game_board)
         else:
-            game_board = bot2.move(game_board)
-            # index = bot2.move_and_get_index(game_board)
-        # indices.append(index)
-        # game_board = game_board.move_from_int(index)
+            # game_board = bot2.move(game_board)
+            index = bot2.move_and_get_index(game_board)
+        indices.append(index)
+        game_board = game_board.move_from_int(index)
         print(game_board)
         result = game_board.terminal_eval()
 
@@ -57,6 +58,7 @@ def bot_v_bot():
     else:
         print("draw")
     print(indices)
+    return result
 
 def bot_v_human_C4():
     SCREEN_WIDTH = 900
@@ -74,9 +76,73 @@ def bot_v_human_Chess():
     move1 = bot.move(starting_board)
     print(move1.board)
 
+def chess_metrics():
+    def bot_v_bot():
+        game_board = BoardPypiChess.from_start()
+        result = 2
+
+        # bot = MinimaxC4(depth=4)
+
+        bot = MantisChess("chessbot.pt", runs=300)
+        # bot2 = MantisC4("data6/net4.pt", True)
+        bot2 = RandomChess()
+
+        print(game_board.board)
+        indices = []
+        for _ in range(20):
+            if game_board.white_move:
+                # game_board = bot.move(game_board)
+                index = bot.move_and_get_index(game_board)
+            else:
+                # game_board = bot2.move(game_board)
+                index = bot2.move_and_get_index(game_board)
+            indices.append(index)
+            game_board = game_board.move_from_int(index)
+            print(game_board.board)
+            print("-" * 50)
+        result = game_board.terminate_from_local_stockfish()
+
+        if result == 1:
+            print("White wins")
+        elif result == -1:
+            print("Black wins")
+        else:
+            print("draw")
+        print(indices)
+        return result
+    
+    w = 0
+    d = 0
+    b = 0
+
+    for i in range(25):
+        print(i)
+        st = time.time()
+        result = bot_v_bot()
+        print("et", time.time() - st)
+        if result == 1:
+            w += 1
+        if result == 0:
+            d += 1
+        if result == -1:
+            b += 1
+    print(w, d, b)
 
 if __name__ == "__main__":
     # bot_v_human_C4()
     # bot_v_bot()
     # bot_v_human_Chess()
-    initializec4board()
+    # initializec4board()
+    # chess_metrics()
+    w = 0
+    d = 0
+    b = 0
+    for i in range(25):
+        result = bot_v_bot()
+        if result == 1:
+            w += 1
+        if result == 0:
+            d += 1
+        if result == -1:
+            b += 1
+    print(w, d, b)
