@@ -19,3 +19,7 @@ class MantisC4(BlankPlayer):
     def move(self, board: BoardC4):
         board, _, _, _ = mcts(board, self.net, runs=self.runs)
         return board
+    
+    def move_and_get_index(self, board: BoardC4):
+        _, _, index, _ = mcts(board, self.net, runs=self.runs)
+        return index
